@@ -923,46 +923,6 @@ html, body {
   color: #fff;
 }
 
-/* ===================== JUICE EFFECTS (SFX/feedback visual) ===================== */
-@keyframes screenShake {
-  0%, 100% { transform: translate(0, 0); }
-  20% { transform: translate(-6px, 4px); }
-  40% { transform: translate(6px, -4px); }
-  60% { transform: translate(-5px, 3px); }
-  80% { transform: translate(4px, 2px); }
-}
-
-.canvas-wrap.shake #stealth-canvas {
-  animation: screenShake 0.35s ease;
-}
-
-.tension-vignette {
-  position: absolute;
-  inset: 0;
-  border-radius: 10px;
-  pointer-events: none;
-  box-shadow: inset 0 0 0px 0px rgba(200, 16, 46, 0);
-  transition: box-shadow 0.2s ease;
-}
-
-.stage-badge-done {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  font-size: 0.68rem;
-  letter-spacing: 1px;
-  color: #0A0A0A;
-  background: var(--emas);
-  padding: 0.2rem 0.6rem;
-  border-radius: 20px;
-  font-weight: 700;
-  z-index: 2;
-}
-
-.stage-card.completed {
-  border-color: rgba(212, 175, 55, 0.35);
-}
-
 /* ===================== RESPONSIVE ===================== */
 @media (max-width: 600px) {
   .main-title { font-size: 2.4rem; letter-spacing: 3px; }
