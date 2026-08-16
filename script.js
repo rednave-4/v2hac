@@ -749,9 +749,10 @@ function initEvents() {
   const panelPlay = document.getElementById('panel-play');
   if (panelPlay) {
     panelPlay.addEventListener('click', () => {
-      if (!selectedMissionId) return;
+      const id = selectedMissionId;
+      if (!id) return;
       closeMissionPanel();
-      startStage(selectedMissionId);
+      startStage(id);
     });
   }
 
