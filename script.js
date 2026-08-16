@@ -398,37 +398,17 @@ function createParticles() {
 }
 
 // -------------------- DASHBOARD --------------------
-function getCompletedStages() {
-  try { return JSON.parse(localStorage.getItem('pj_completed') || '[]'); }
-  catch (e) { return []; }
-}
-
-function markStageCompleted(id) {
-  try {
-    const done = getCompletedStages();
-    if (!done.includes(id)) {
-      done.push(id);
-      localStorage.setItem('pj_completed', JSON.stringify(done));
-    }
-  } catch (e) {}
-  renderStages();
-  SFX.success();
-}
-
 function renderStages() {
   const grid = document.getElementById('stages-grid');
   if (!grid) return;
   grid.innerHTML = '';
-  const completed = getCompletedStages();
 
   stages.forEach(stage => {
-    const isDone = completed.includes(stage.id);
     const card = document.createElement('div');
-    card.className = `stage-card ${stage.status}${isDone ? ' completed' : ''}`;
+    card.className = `stage-card ${stage.status}`;
     card.dataset.id = stage.id;
 
     card.innerHTML = `
-      ${isDone ? '<div class="stage-badge-done">✓ SELESAI</div>' : ''}
       <div class="stage-number">${stage.number}</div>
       <h3>${stage.title}</h3>
       <div class="stage-date">${stage.date}</div>
@@ -449,7 +429,7 @@ function renderStages() {
 function startStage(stageId) {
   // Babak 02 → game ketikan naskah proklamasi (Sayuti Melik)
   if (stageId === 'proklamasi') {
-    window.location.href = 'ketikan.html?from=game';
+    window.location.href = 'ketikan.html';
     return;
   }
 
@@ -501,7 +481,7 @@ function renderScene(sceneId) {
     const btn = document.createElement('button');
     btn.className = 'choice-btn';
     btn.innerHTML = `<span class="choice-letter">${letters[idx]}</span>${choice.text}`;
-    btn.addEventListener('click', () => { SFX.uiClick(); applyChoice(choice); });
+    btn.addEventListener('click', () => applyChoice(choice));
     container.appendChild(btn);
   });
 
@@ -633,169 +613,8 @@ const game = {
   dialogOpen: false,
   joy: { active: false, dx: 0, dy: 0 },
   player: { x: 100, y: 300, r: 12, speed: 2.6, facing: 1 },
-  animT: 0,
-  particles: [],
-  stepTimer: 0
+  animT: 0
 };
-
-// -------------------- SOUND ENGINE (sintesis Web Audio, tanpa file eksternal) --------------------
-const SFX = (() => {
-  let ctx = null;
-  let heartbeatTimer = null;
-  let muted = false;
-
-  function actx() {
-    if (!ctx) {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return null;
-      ctx = new AC();
-    }
-    if (ctx.state === 'suspended') ctx.resume();
-    return ctx;
-  }
-
-  function unlock() { try { actx(); } catch (e) {} }
-
-  function noiseBuffer(c, dur) {
-    const n = Math.max(1, Math.floor(c.sampleRate * dur));
-    const buf = c.createBuffer(1, n, c.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
-    return buf;
-  }
-
-  function tone(freq, dur, type, vol, glideTo) {
-    if (muted) return;
-    try {
-      const c = actx();
-      if (!c) return;
-      const t = c.currentTime;
-      const osc = c.createOscillator();
-      osc.type = type || 'sine';
-      osc.frequency.setValueAtTime(freq, t);
-      if (glideTo) osc.frequency.exponentialRampToValueAtTime(glideTo, t + dur);
-      const g = c.createGain();
-      g.gain.setValueAtTime(vol || 0.2, t);
-      g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-      osc.connect(g); g.connect(c.destination);
-      osc.start(t); osc.stop(t + dur);
-    } catch (e) {}
-  }
-
-  function footstep() {
-    if (muted) return;
-    try {
-      const c = actx();
-      if (!c) return;
-      const t = c.currentTime;
-      const src = c.createBufferSource();
-      src.buffer = noiseBuffer(c, 0.05);
-      const bp = c.createBiquadFilter();
-      bp.type = 'bandpass';
-      bp.frequency.value = 220 + Math.random() * 60;
-      bp.Q.value = 0.9;
-      const g = c.createGain();
-      g.gain.setValueAtTime(0.055, t);
-      g.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
-      src.connect(bp); bp.connect(g); g.connect(c.destination);
-      src.start(t); src.stop(t + 0.05);
-    } catch (e) {}
-  }
-
-  function pickup() {
-    tone(880, 0.12, 'triangle', 0.18, 1320);
-    setTimeout(() => tone(1320, 0.15, 'triangle', 0.14), 60);
-  }
-
-  function uiClick() {
-    tone(520, 0.045, 'square', 0.045);
-  }
-
-  function detected() {
-    if (muted) return;
-    try {
-      const c = actx();
-      if (!c) return;
-      const t = c.currentTime;
-      const osc = c.createOscillator();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(300, t);
-      osc.frequency.exponentialRampToValueAtTime(60, t + 0.6);
-      const g = c.createGain();
-      g.gain.setValueAtTime(0.22, t);
-      g.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
-      osc.connect(g); g.connect(c.destination);
-      osc.start(t); osc.stop(t + 0.6);
-    } catch (e) {}
-  }
-
-  function success() {
-    const notes = [523.25, 659.25, 783.99, 1046.5];
-    notes.forEach((f, i) => setTimeout(() => tone(f, 0.35, 'triangle', 0.16), i * 110));
-  }
-
-  function heartbeatStart() {
-    if (heartbeatTimer || muted) return;
-    heartbeatTimer = setInterval(() => {
-      tone(70, 0.09, 'sine', 0.12);
-      setTimeout(() => tone(58, 0.09, 'sine', 0.1), 150);
-    }, 650);
-  }
-  function heartbeatStop() {
-    if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
-  }
-
-  function toggleMute() {
-    muted = !muted;
-    if (muted) heartbeatStop();
-    return muted;
-  }
-
-  return { unlock, footstep, pickup, uiClick, detected, success, heartbeatStart, heartbeatStop, toggleMute };
-})();
-
-// -------------------- PARTICLE BURST (canvas juice effect) --------------------
-function spawnParticles(x, y, count = 10, color = '212,175,55') {
-  for (let i = 0; i < count; i++) {
-    const ang = Math.random() * Math.PI * 2;
-    const speed = 0.8 + Math.random() * 2.2;
-    game.particles.push({
-      x, y,
-      vx: Math.cos(ang) * speed,
-      vy: Math.sin(ang) * speed - 1,
-      life: 26 + Math.random() * 10,
-      maxLife: 34,
-      color
-    });
-  }
-}
-
-function updateParticles() {
-  for (let i = game.particles.length - 1; i >= 0; i--) {
-    const p = game.particles[i];
-    p.x += p.vx;
-    p.y += p.vy;
-    p.vy += 0.06;
-    p.life -= 1;
-    if (p.life <= 0) game.particles.splice(i, 1);
-  }
-}
-
-function triggerShake() {
-  const wrap = document.querySelector('.canvas-wrap');
-  if (!wrap) return;
-  wrap.classList.remove('shake');
-  void wrap.offsetWidth; // restart animation
-  wrap.classList.add('shake');
-  setTimeout(() => wrap.classList.remove('shake'), 400);
-}
-
-function updateTensionVignette(alarmPct) {
-  const v = document.getElementById('tension-vignette');
-  if (!v) return;
-  const t = Math.max(0, Math.min(1, alarmPct / 100));
-  v.style.boxShadow = `inset 0 0 ${40 + t * 90}px ${10 + t * 20}px rgba(200,16,46,${t * 0.55})`;
-}
 
 // ---------- ALL STAGE MAPS ----------
 const STAGE_MAPS = {
@@ -1183,7 +1002,6 @@ function startStealth() {
 
 function stopStealth() {
   game.running = false;
-  SFX.heartbeatStop();
   if (game.loopId) cancelAnimationFrame(game.loopId);
   window.removeEventListener('keydown', onKeyDown);
   window.removeEventListener('keyup', onKeyUp);
@@ -1233,7 +1051,6 @@ function loadMap(id) {
 
 function onStageComplete() {
   stopStealth();
-  SFX.success();
   document.getElementById('success-title').textContent = 'TAHAP SELESAI';
   document.getElementById('success-desc').textContent =
     'Kamu telah melewati rangkaian peristiwa Rengasdengklok. Rombongan kembali ke Jakarta untuk menyusun naskah proklamasi.';
@@ -1372,8 +1189,6 @@ function tryInteract() {
       it.taken = true;
       game.inventory.push({ id: it.id, name: it.name, icon: it.icon });
       updateInvUI();
-      SFX.pickup();
-      spawnParticles(it.x, it.y, 12, '212,175,55');
       if (it.id === 'naskah') game.flags.got_naskah = true;
       if (it.id === 'bendera_proklamasi') game.flags.ready_proklamasi = true;
     }
@@ -1389,7 +1204,6 @@ function tryInteract() {
 }
 
 function openDialog(npc) {
-  SFX.uiClick();
   game.dialogOpen = true;
   game.dialogQueue = [...(npc.dialog || ['...'])];
   document.getElementById('npc-name').textContent = npc.name;
@@ -1445,20 +1259,8 @@ function gameLoop() {
     let ny = game.player.y + dy;
     nx = Math.max(16, Math.min(game.W - 16, nx));
     ny = Math.max(16, Math.min(game.H - 16, ny));
-    const moved = (nx !== game.player.x || ny !== game.player.y) && (dx !== 0 || dy !== 0);
     if (!collides(nx, game.player.y)) game.player.x = nx;
     if (!collides(game.player.x, ny)) game.player.y = ny;
-
-    // Footstep sfx (throttled so it doesn't spam every frame)
-    if (moved) {
-      game.stepTimer -= 1;
-      if (game.stepTimer <= 0) {
-        SFX.footstep();
-        game.stepTimer = 16;
-      }
-    } else {
-      game.stepTimer = 0;
-    }
 
     // Patrols
     const m = getMap();
@@ -1478,36 +1280,20 @@ function gameLoop() {
           game.alarm += 1.5;
           if (game.alarm >= 100) {
             game.alarm = 100;
-            if (!game.detected) {
-              game.detected = true;
-              SFX.detected();
-              SFX.heartbeatStop();
-              triggerShake();
-            }
+            game.detected = true;
             document.getElementById('stealth-fail').style.display = 'flex';
             game.running = false;
           }
         }
       });
       if (!game.detected && game.alarm > 0) game.alarm = Math.max(0, game.alarm - 0.1);
-
-      // Tension heartbeat: kicks in when alarm is dangerously high
-      if (!game.detected) {
-        if (game.alarm > 55) SFX.heartbeatStart();
-        else SFX.heartbeatStop();
-      }
-      updateTensionVignette(game.alarm);
-
       const av = document.getElementById('alarm-value');
       if (av) av.textContent = Math.round(game.alarm);
-    } else {
-      updateTensionVignette(0);
     }
 
     updateNearInteract();
   }
 
-  updateParticles();
   drawGame();
   game.loopId = requestAnimationFrame(gameLoop);
 }
@@ -1618,15 +1404,6 @@ function drawGame() {
     ctx.lineWidth = 3;
     ctx.stroke();
   }
-
-  // particle bursts (item pickups, etc)
-  game.particles.forEach(p => {
-    const alpha = Math.max(0, p.life / p.maxLife);
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 2 + alpha * 1.5, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(${p.color},${alpha})`;
-    ctx.fill();
-  });
 }
 
 // wire extra UI
@@ -1649,25 +1426,6 @@ document.addEventListener('DOMContentLoaded', () => {
   renderStages();
   initEvents();
   wireAdventureUI();
-
-  // Sfx klik global untuk semua tombol utama + unlock audio di gesture pertama
-  document.body.addEventListener('click', (e) => {
-    SFX.unlock();
-    const el = e.target.closest('.btn-continue, .choice-btn, .stage-card, .inv-btn, .mobile-action, #entrance-1');
-    if (el) SFX.uiClick();
-  }, true);
-  document.addEventListener('keydown', () => SFX.unlock(), { once: true });
-
-  // Kembali dari minigame eksternal (ketikan.html) → langsung ke dashboard, bukan splash
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('screen') === 'dashboard') {
-    showScreen('dashboard');
-    const completedId = params.get('completed');
-    if (completedId) {
-      setTimeout(() => markStageCompleted(completedId), 200);
-    }
-    history.replaceState(null, '', window.location.pathname);
-  }
 
   // Ganti nama pembuat di sini:
   // document.getElementById('creator-name').textContent = 'Nama Kamu';
