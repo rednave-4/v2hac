@@ -1437,3 +1437,27 @@ button {
     gap: 0.5rem;
   }
 }
+
+
+/* Mode select — ensure visible & interactive when active */
+#modeSelect.is-active {
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 10;
+}
+#modeSelect .mode-select {
+  max-width: 860px;
+  width: min(860px, 94vw);
+  margin: 0 auto;
+}
+#modeSelect .mode-cards {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  width: 100%;
+}
+@media (max-width: 640px) {
+  #modeSelect .mode-cards {
+    grid-template-columns: 1fr !important;
+  }
+}

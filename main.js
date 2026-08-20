@@ -1,7 +1,6 @@
 /* ==========================================================================
-   PERJUANGAN — main.js
+   PERJUANGAN — main.js v2.2.1
    Flow: E1 → E2 → Mode Select → Learn | Game
-   Language switcher + i18n refresh
    ========================================================================== */
 
 (function () {
@@ -26,16 +25,16 @@
       if (!el) return;
       if (key === name) {
         el.hidden = false;
+        el.classList.remove("is-leaving");
+        // force reflow then fade in
         void el.offsetWidth;
-        requestAnimationFrame(() => el.classList.add("is-active"));
+        requestAnimationFrame(() => {
+          el.classList.add("is-active");
+        });
       } else {
         el.classList.remove("is-active");
-        // keep hidden after leave animation for non-active
-        if (key !== name) {
-          setTimeout(() => {
-            if (!el.classList.contains("is-active")) el.hidden = true;
-          }, 700);
-        }
+        el.classList.remove("is-leaving");
+        el.hidden = true;
       }
     });
   }
@@ -45,7 +44,6 @@
       const key = el.getAttribute("data-i18n");
       if (key) el.textContent = PJ.I18N.t(key);
     });
-    // lang button labels show the *other* language
     const other = PJ.I18N.getLang() === "id" ? "EN" : "ID";
     document.querySelectorAll(".lang-switch").forEach((btn) => {
       btn.textContent = other;
@@ -73,7 +71,6 @@
     });
   }
 
-  // ---------- Entrance 1 ----------
   function initEntrance1() {
     const canvas = document.getElementById("flagCanvas");
     try {
@@ -136,13 +133,11 @@
           ["pointerup", "click", "touchend"].forEach((evt) => hit.removeEventListener(evt, h));
         }
       }
-      screens.entrance1.hidden = true;
       goTo("entrance2");
       applyI18nDOM();
     }, 700);
   }
 
-  // ---------- Entrance 2 → Mode Select ----------
   function initEntrance2() {
     const btn = document.getElementById("ctaContinue");
     if (!btn) return;
@@ -151,19 +146,16 @@
         e.preventDefault();
         e.stopPropagation();
       }
-      screens.entrance2.classList.add("is-leaving");
-      setTimeout(() => {
-        screens.entrance2.hidden = true;
-        goTo("modeSelect");
-        applyI18nDOM();
-      }, 650);
+      // Direct switch — no race with overlapping timers
+      goTo("modeSelect");
+      applyI18nDOM();
+      console.log("[PERJUANGAN] → mode select");
     };
     ["pointerup", "click", "touchend"].forEach((evt) => {
       btn.addEventListener(evt, go, { passive: false });
     });
   }
 
-  // ---------- Mode select ----------
   function initModeSelect() {
     const learnBtn = document.getElementById("btnModeLearn");
     const gameBtn = document.getElementById("btnModeGame");
@@ -173,18 +165,15 @@
         e.preventDefault();
         e.stopPropagation();
       }
-      screens.modeSelect.classList.add("is-leaving");
-      setTimeout(() => {
-        screens.modeSelect.hidden = true;
-        goTo("learnMode");
-        if (!learnInitialized) {
-          PJ.LearnController.init();
-          learnInitialized = true;
-        } else {
-          PJ.LearnController.applyI18n();
-        }
-        applyI18nDOM();
-      }, 500);
+      goTo("learnMode");
+      if (!learnInitialized) {
+        PJ.LearnController.init();
+        learnInitialized = true;
+      } else {
+        PJ.LearnController.applyI18n();
+      }
+      applyI18nDOM();
+      console.log("[PERJUANGAN] → learn mode");
     };
 
     const enterGame = (e) => {
@@ -192,18 +181,15 @@
         e.preventDefault();
         e.stopPropagation();
       }
-      screens.modeSelect.classList.add("is-leaving");
-      setTimeout(() => {
-        screens.modeSelect.hidden = true;
-        goTo("mainMap");
-        if (!mapInitialized) {
-          PJ.MapController.init();
-          mapInitialized = true;
-        } else if (PJ.MapController.applyI18n) {
-          PJ.MapController.applyI18n();
-        }
-        applyI18nDOM();
-      }, 500);
+      goTo("mainMap");
+      if (!mapInitialized) {
+        PJ.MapController.init();
+        mapInitialized = true;
+      } else if (PJ.MapController.applyI18n) {
+        PJ.MapController.applyI18n();
+      }
+      applyI18nDOM();
+      console.log("[PERJUANGAN] → game mode");
     };
 
     ["pointerup", "click", "touchend"].forEach((evt) => {
@@ -211,9 +197,6 @@
       if (gameBtn) gameBtn.addEventListener(evt, enterGame, { passive: false });
     });
 
-    // Back to mode select
-    const learnBack = document.getElementById("learnBackBtn");
-    const gameBack = document.getElementById("gameBackBtn");
     const back = (e) => {
       if (e) {
         e.preventDefault();
@@ -222,6 +205,8 @@
       goTo("modeSelect");
       applyI18nDOM();
     };
+    const learnBack = document.getElementById("learnBackBtn");
+    const gameBack = document.getElementById("gameBackBtn");
     if (learnBack) learnBack.addEventListener("click", back);
     if (gameBack) gameBack.addEventListener("click", back);
   }
