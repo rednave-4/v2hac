@@ -1,23 +1,24 @@
 /* ==========================================================================
-   PERJUANGAN — flag.js
-   Cloth-like Indonesian flag on Canvas 2D mesh.
-   Re-configures when parent size was 0 at init (common when screen starts hidden).
+   PERJUANGAN — flag.js v2.3
+   Cloth flag. Never depends on parent being visible at construct time.
+   Uses window-based fallback size so W/H are never 0.
    ========================================================================== */
 
 window.PJ = window.PJ || {};
 
-PJ.FlagCloth = function (canvas, opts) {
-  opts = opts || {};
-  const ctx = canvas.getContext("2d");
+PJ.FlagCloth = function (canvas) {
+  const ctx = canvas.getContext("2d", { alpha: true });
 
-  let dpr = Math.min(window.devicePixelRatio || 1, 2);
+  let dpr = 1;
   let cols = 16;
   let rows = 10;
-  let W = 0;
-  let H = 0;
+  let W = 320;
+  let H = 213;
+  let viewW = 400;
+  let viewH = 280;
   let running = false;
   let rafId = null;
-  let startTime = performance.now();
+  let startTime = 0;
 
   const RED = { r: 200, g: 16, b: 46 };
   const WHITE = { r: 245, g: 241, b: 232 };
@@ -27,22 +28,42 @@ PJ.FlagCloth = function (canvas, opts) {
   }
 
   function configure() {
-    const parent = canvas.parentElement;
-    if (!parent) return false;
-    const rect = parent.getBoundingClientRect();
-    // Parent still hidden / not laid out
-    if (rect.width < 8 || rect.height < 8) return false;
-
     dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.max(1, Math.round(rect.width * dpr));
-    canvas.height = Math.max(1, Math.round(rect.height * dpr));
-    canvas.style.width = rect.width + "px";
-    canvas.style.height = rect.height + "px";
+
+    const parent = canvas.parentElement;
+    let pw = 0;
+    let ph = 0;
+    if (parent) {
+      const rect = parent.getBoundingClientRect();
+      pw = rect.width;
+      ph = rect.height;
+    }
+
+    // Fallback when parent not laid out yet (hidden screen, flex not settled)
+    if (pw < 32 || ph < 32) {
+      pw = Math.min(window.innerWidth * 0.78, 640);
+      ph = Math.min(window.innerWidth * 0.42, 340);
+      if (pw < 32) pw = 320;
+      if (ph < 32) ph = 213;
+      // Apply explicit size on parent so absolute canvas has a box
+      if (parent) {
+        parent.style.width = pw + "px";
+        parent.style.height = ph + "px";
+      }
+    }
+
+    viewW = pw;
+    viewH = ph;
+
+    canvas.width = Math.max(1, Math.round(pw * dpr));
+    canvas.height = Math.max(1, Math.round(ph * dpr));
+    canvas.style.width = pw + "px";
+    canvas.style.height = ph + "px";
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const maxW = Math.min(rect.width * 0.72, 560);
-    W = maxW;
-    H = maxW * (2 / 3);
+    const maxW = Math.min(pw * 0.78, 560);
+    W = Math.max(120, maxW);
+    H = W * (2 / 3);
     cols = isMobile() ? 10 : 16;
     rows = isMobile() ? 6 : 10;
     return true;
@@ -52,75 +73,59 @@ PJ.FlagCloth = function (canvas, opts) {
     const f = Math.max(-1, Math.min(1, factor));
     const mix = f >= 0 ? 255 : 0;
     const amt = Math.abs(f) * (f >= 0 ? 0.28 : 0.35);
-    const r = Math.round(base.r + (mix - base.r) * amt);
-    const g = Math.round(base.g + (mix - base.g) * amt);
-    const b = Math.round(base.b + (mix - base.b) * amt);
-    return `rgb(${r},${g},${b})`;
+    return (
+      "rgb(" +
+      Math.round(base.r + (mix - base.r) * amt) +
+      "," +
+      Math.round(base.g + (mix - base.g) * amt) +
+      "," +
+      Math.round(base.b + (mix - base.b) * amt) +
+      ")"
+    );
   }
 
   function render(now) {
     if (!running) return;
+    const t = ((now || performance.now()) - startTime) / 1000;
 
-    // If we still have no valid size, keep trying to measure
-    if (W < 8 || H < 8) {
-      configure();
-      rafId = requestAnimationFrame(render);
-      return;
-    }
+    ctx.clearRect(0, 0, viewW, viewH);
 
-    const t = (now - startTime) / 1000;
-    const parent = canvas.parentElement;
-    const rect = parent ? parent.getBoundingClientRect() : { width: W, height: H };
-
-    // Parent grew after first layout (e.g. font load / flex settle)
-    if (rect.width >= 8 && Math.abs(rect.width - canvas.clientWidth) > 2) {
-      configure();
-    }
-
-    ctx.clearRect(0, 0, rect.width || canvas.clientWidth, rect.height || canvas.clientHeight);
-
-    const anchorX = (rect.width || canvas.clientWidth) * 0.18;
-    const anchorY = (rect.height || canvas.clientHeight) * 0.42;
-
+    const anchorX = viewW * 0.16;
+    const anchorY = viewH * 0.38;
     const sway = Math.sin(t * 0.55) * 4;
+
     ctx.save();
     ctx.translate(anchorX + sway * 0.15, anchorY);
 
-    // Soft shadow under cloth
+    // Shadow
     ctx.save();
-    ctx.translate(10, H * 0.15);
-    ctx.fillStyle = "rgba(0,0,0,0.28)";
+    ctx.translate(8, H * 0.12);
+    ctx.fillStyle = "rgba(0,0,0,0.3)";
     ctx.beginPath();
-    ctx.ellipse(W * 0.45, H * 0.55, W * 0.42, H * 0.18, 0.1, 0, Math.PI * 2);
+    ctx.ellipse(W * 0.45, H * 0.55, W * 0.4, H * 0.16, 0.08, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
 
     const amp1 = H * 0.055;
     const amp2 = H * 0.028;
-    const freq1 = 0.55;
-    const freq2 = 1.15;
-    const speed1 = 1.8;
-    const speed2 = 2.6;
-
     const colOffset = [];
     const colScale = [];
     for (let i = 0; i <= cols; i++) {
-      const distFactor = i / cols;
-      const phase1 = i * freq1 - t * speed1;
-      const phase2 = i * freq2 - t * speed2 + 1.2;
-      const w1 = Math.sin(phase1) * amp1;
-      const w2 = Math.sin(phase2) * amp2;
-      colOffset[i] = (w1 + w2) * distFactor;
-      colScale[i] = 1 - 0.06 * distFactor * (1 - Math.cos(phase1)) * 0.5;
+      const dist = i / cols;
+      const phase1 = i * 0.55 - t * 1.8;
+      const phase2 = i * 1.15 - t * 2.6 + 1.2;
+      colOffset[i] = (Math.sin(phase1) * amp1 + Math.sin(phase2) * amp2) * dist;
+      colScale[i] = 1 - 0.06 * dist * (1 - Math.cos(phase1)) * 0.5;
     }
 
     const verts = [];
     for (let j = 0; j <= rows; j++) {
       const row = [];
       for (let i = 0; i <= cols; i++) {
-        const baseX = (i / cols) * W * colScale[i];
-        const baseY = (j / rows) * H;
-        row.push({ x: baseX, y: baseY + colOffset[i] });
+        row.push({
+          x: (i / cols) * W * colScale[i],
+          y: (j / rows) * H + colOffset[i],
+        });
       }
       verts.push(row);
     }
@@ -157,20 +162,19 @@ PJ.FlagCloth = function (canvas, opts) {
   }
 
   function start() {
+    if (running) return;
     running = true;
     startTime = performance.now();
-    // Measure after layout — retry a few frames if still 0
-    let tries = 0;
-    function tryStart() {
-      if (configure() || tries > 30) {
-        if (W < 8) configure();
-        rafId = requestAnimationFrame(render);
-        return;
-      }
-      tries += 1;
-      requestAnimationFrame(tryStart);
-    }
-    tryStart();
+    configure();
+    // Re-measure after a couple frames (layout may settle)
+    requestAnimationFrame(() => {
+      configure();
+      requestAnimationFrame(() => configure());
+    });
+    setTimeout(() => configure(), 100);
+    setTimeout(() => configure(), 400);
+    setTimeout(() => configure(), 900);
+    rafId = requestAnimationFrame(render);
   }
 
   function stop() {
@@ -179,7 +183,6 @@ PJ.FlagCloth = function (canvas, opts) {
     rafId = null;
   }
 
-  // Initial attempt (may fail if parent hidden — start() will retry)
   configure();
   window.addEventListener("resize", () => {
     configure();

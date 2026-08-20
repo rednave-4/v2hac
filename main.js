@@ -85,21 +85,24 @@
       console.warn("[PERJUANGAN] flag failed:", err);
     }
 
-    requestAnimationFrame(() => bg.classList.add("bg-in"));
-    setTimeout(() => {
+    // Fade screen + flag in as soon as layout exists
+    requestAnimationFrame(() => {
+      bg.classList.add("bg-in");
       if (flagWrap) flagWrap.classList.add("is-in");
-      // Start after flag-wrap is visible + layout settled
       if (flagInstance) {
         flagInstance.configure();
         flagInstance.start();
       }
-    }, 350);
-    // Extra measure after CSS transition / font layout
+    });
+    setTimeout(() => {
+      if (flagWrap) flagWrap.classList.add("is-in");
+      if (flagInstance) flagInstance.configure();
+    }, 200);
     setTimeout(() => {
       if (flagInstance) flagInstance.configure();
-    }, 700);
-    setTimeout(() => { if (textBlock) textBlock.classList.add("is-in"); }, 1000);
-    setTimeout(() => { if (hint) hint.classList.add("is-in"); }, 1600);
+    }, 600);
+    setTimeout(() => { if (textBlock) textBlock.classList.add("is-in"); }, 800);
+    setTimeout(() => { if (hint) hint.classList.add("is-in"); }, 1400);
 
     const advance = (e) => {
       if (advancedFromE1) return;
@@ -204,9 +207,10 @@
   document.addEventListener("DOMContentLoaded", () => {
     applyI18nDOM();
     bindLangButtons();
-    initEntrance1();
     initButtons();
     initDevToggle();
+    // Show entrance1 FIRST so flag parent has layout size
     goTo("entrance1");
+    initEntrance1();
   });
 })();
