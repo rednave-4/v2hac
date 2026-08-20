@@ -23,6 +23,7 @@
     Object.entries(screens).forEach(([key, el]) => {
       if (key === name) {
         el.hidden = false;
+        void el.offsetWidth;
         requestAnimationFrame(() => el.classList.add("is-active"));
       } else {
         el.classList.remove("is-active");
@@ -33,10 +34,6 @@
   // ---------- Entrance 1 ----------
   function initEntrance1() {
     const canvas = document.getElementById("flagCanvas");
-    // The cloth flag is decorative. If it ever throws (unusual canvas
-    // support, etc.) we must not let that stop the advance-to-next-screen
-    // listeners below from being registered — that would strand the
-    // player on Entrance 1 with no way to continue.
     try {
       flagInstance = PJ.FlagCloth(canvas);
     } catch (err) {
@@ -49,36 +46,35 @@
     const textBlock = document.getElementById("e1Text");
     const hint = document.getElementById("e1Hint");
 
-    // Motion timing per spec
-    requestAnimationFrame(() => bg.classList.add("bg-in")); // 0.0s
+    requestAnimationFrame(() => bg.classList.add("bg-in"));
     setTimeout(() => {
       flagWrap.classList.add("is-in");
       if (flagInstance) flagInstance.start();
-    }, 300); // 0.3s — flag appears, cloth already running
-    setTimeout(() => {
-      textBlock.classList.add("is-in");
-    }, 1000); // ~1.0s — title reveal
-    setTimeout(() => {
-      hint.classList.add("is-in");
-    }, 1600);
+    }, 300);
+    setTimeout(() => textBlock.classList.add("is-in"), 1000);
+    setTimeout(() => hint.classList.add("is-in"), 1600);
 
+    // Unified pointer + keyboard advance (pointerup covers mouse/touch/pen reliably)
     const advance = (e) => {
       if (advancedFromE1) return;
-      if (e && e.type === "keydown" && e.key !== " " && e.key !== "Enter" && e.code !== "Space")
-        return;
-      if (e) e.preventDefault();
+
+      if (e && e.type === "keydown") {
+        if (e.key !== " " && e.key !== "Enter" && e.code !== "Space") return;
+      }
+      if (e && e.type && e.type.startsWith("pointer") && e.isPrimary === false) return;
+
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
       advancedFromE1 = true;
       leaveEntrance1();
     };
 
-    document.addEventListener("keydown", advance);
-    screens.entrance1.addEventListener("click", advance);
-    // Belt-and-suspenders for touch devices: "click" already fires on tap
-    // in every modern mobile browser, but touchend is a harmless extra
-    // path in case a device suppresses the synthetic click.
-    screens.entrance1.addEventListener("touchend", advance, { passive: false });
+    document.addEventListener("keydown", advance, true);
+    screens.entrance1.addEventListener("pointerup", advance, { passive: false });
+    screens.entrance1.addEventListener("click", advance); // legacy fallback
 
-    // stash for potential cleanup
     screens.entrance1._advanceHandler = advance;
   }
 
@@ -86,18 +82,26 @@
     screens.entrance1.classList.add("is-leaving");
     setTimeout(() => {
       if (flagInstance) flagInstance.stop();
-      document.removeEventListener("keydown", screens.entrance1._advanceHandler);
-      screens.entrance1.removeEventListener("click", screens.entrance1._advanceHandler);
-      screens.entrance1.removeEventListener("touchend", screens.entrance1._advanceHandler);
+      const h = screens.entrance1._advanceHandler;
+      if (h) {
+        document.removeEventListener("keydown", h, true);
+        screens.entrance1.removeEventListener("pointerup", h);
+        screens.entrance1.removeEventListener("click", h);
+      }
       screens.entrance1.hidden = true;
       goTo("entrance2");
-    }, 700); // soft fade/blur, not a hard cut
+    }, 700);
   }
 
   // ---------- Entrance 2 ----------
   function initEntrance2() {
     const ctaBtn = document.getElementById("ctaEnterMap");
-    ctaBtn.addEventListener("click", () => {
+    ctaBtn.style.pointerEvents = "auto";
+    const goMap = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
       screens.entrance2.classList.add("is-leaving");
       setTimeout(() => {
         screens.entrance2.hidden = true;
@@ -106,8 +110,10 @@
           PJ.MapController.init();
           mapInitialized = true;
         }
-      }, 650); // zoom-out / camera pull
-    });
+      }, 650);
+    };
+    ctaBtn.addEventListener("pointerup", goMap, { passive: false });
+    ctaBtn.addEventListener("click", goMap);
   }
 
   // ---------- Hidden dev toggle ----------
@@ -118,9 +124,7 @@
         const badge = document.getElementById("devBadge");
         if (badge) badge.hidden = !PJ.devMode;
         console.log(`[PERJUANGAN] dev mode ${PJ.devMode ? "ON" : "OFF"}`);
-        // re-render panel if one is open, to show/hide the dev button
-        const evt = new CustomEvent("pj:devmodechange");
-        document.dispatchEvent(evt);
+        document.dispatchEvent(new CustomEvent("pj:devmodechange"));
       }
     });
   }
