@@ -31,7 +31,7 @@
 
       <p class="e1-hint" id="e1Hint">Tekan spasi atau klik untuk melanjutkan</p>
 
-      <!-- Full-screen invisible hit target — guarantees mouse & touch always work -->
+      <!-- Full-screen invisible hit target — mouse & touch always work -->
       <button type="button" id="e1Hit" class="e1-hit" aria-label="Lanjutkan ke layar berikutnya"></button>
     </section>
 
@@ -54,7 +54,7 @@
           <span class="brand-mark" aria-hidden="true"><span class="top"></span><span class="bottom"></span></span>
           <div class="brand-text">
             <span class="brand-title">PERJUANGAN</span>
-            <span class="brand-version">v2.0 · Peta Perjuangan</span>
+            <span class="brand-version">v2.1 · Peta Perjuangan</span>
           </div>
         </div>
         <div class="header-right">
@@ -78,7 +78,6 @@
                 <stop offset="100%" stop-color="#0a0908" />
               </linearGradient>
             </defs>
-            <!-- abstract archipelago silhouette — stylized, not a literal map -->
             <path
               d="M -5 90 Q 10 75 22 82 T 40 78 Q 46 65 58 68 T 72 60 Q 80 48 92 52 T 108 46 L 108 108 L -5 108 Z"
               fill="url(#islandGrad)"
@@ -115,15 +114,15 @@
 
     <div id="modalRoot"></div>
 
-    <!-- ============================== STAGE OVERLAY (mini-game) ============================== -->
+    <!-- ============================== STAGE OVERLAY (Sumpah Pemuda) ============================== -->
     <div id="stageOverlay" class="stage-overlay grain" hidden aria-label="Tahap misi">
       <div class="stage-overlay__topbar">
         <div class="stage-overlay__heading">
-          <p class="eyebrow">Sumpah Pemuda</p>
-          <p class="stage-overlay__hint">Ketuk atau tekan Enter/Spasi pada tiap titik untuk menyambungkannya ke pusat</p>
+          <p class="eyebrow">Sumpah Pemuda · Satukan Suara</p>
+          <p class="stage-overlay__hint">Ketuk setiap suara daerah hingga semua tersambung ke pusat tekad.</p>
         </div>
         <div class="stage-overlay__right">
-          <span class="progress-pill" id="stageProgress">0 / 6 TERSAMBUNG</span>
+          <span class="progress-pill" id="stageProgress">0 / 6 SUARA</span>
           <button class="stage-overlay__close" id="stageCloseBtn" aria-label="Tutup tahap">&times;</button>
         </div>
       </div>
@@ -135,9 +134,9 @@
 
       <div class="stage-complete" id="stageCompletePanel" hidden>
         <p class="eyebrow">Satu!</p>
-        <h3 class="stage-complete__title">Semangat Persatuan Menyala</h3>
+        <h3 class="stage-complete__title">Satu Nusa · Satu Bangsa · Satu Bahasa</h3>
         <p class="stage-complete__body">
-          Dari berbagai arah, satu tekad: satu tanah air, satu bangsa, satu bahasa.
+          Dari penjuru yang berbeda, satu tekad yang sama. Ikrar yang menjadi fondasi persatuan menuju kemerdekaan.
         </p>
         <button class="btn btn--primary" id="stageCompleteBtn">Lanjutkan</button>
       </div>
@@ -146,7 +145,7 @@
 
   <script src="data.js"></script>
   <script src="modal.js"></script>
-  <script src="stages/sumpah-pemuda/stage.js"></script>
+  <script src="stage-sumpah-pemuda.js"></script>
   <script src="flag.js"></script>
   <script src="map.js"></script>
   <script src="main.js"></script>

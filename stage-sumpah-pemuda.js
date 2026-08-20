@@ -1,19 +1,13 @@
 /* ==========================================================================
    PERJUANGAN — stage-sumpah-pemuda.js
-   "Satukan Suara" — a self-contained node-linking mini-game.
+   "Satukan Suara" — cinematic node-linking ritual.
 
-   Mechanic: tap/click/keyboard-activate each of six orbs to connect it to
-   the glowing center. No dragging required — this keeps it equally usable
-   on touchscreens (a single tap) and keyboards (Tab + Enter/Space), and
-   the goal is legible purely from the visuals (empty dots, one glowing
-   hub) without any historical knowledge.
+   Six regional voices (orbs) must be brought into the central will.
+   Presentation is deliberately solemn and restrained: parchment, gold,
+   deep red, ink-like light threads. No toy colours or bounce-heavy motion.
 
-   Orbs are real <button> elements (same accessible pattern as the mission
-   nodes in map.js), absolutely positioned over a decorative canvas layer
-   that only renders the ambient glow, connection lines, and particles.
-
-   Registered on PJ.Stages["sumpah-pemuda"] with an open({onComplete}) API,
-   called by startMission() in map.js.
+   Mechanic stays accessible (single tap / click / Enter) so it works on
+   touch and keyboard without historical knowledge required.
    ========================================================================== */
 
 window.PJ = window.PJ || {};
@@ -22,47 +16,34 @@ PJ.Stages = PJ.Stages || {};
 PJ.Stages["sumpah-pemuda"] = (function () {
   const ORB_COUNT = 6;
   const GOLD = "#eac873";
+  const GOLD_DIM = "#c9a227";
+  const PARCH = "#f3eee1";
+
+  // Restrained palette + short regional labels (not cartoon colours)
   const ORBS_DEF = [
-    { color: "#c8102e", icon: "flame" },
-    { color: "#c9a227", icon: "sun" },
-    { color: "#4c8cae", icon: "wave" },
-    { color: "#8a5cb0", icon: "star" },
-    { color: "#4caf6a", icon: "leaf" },
-    { color: "#c9702e", icon: "mountain" },
+    { label: "Sumatera", hue: "#8b2e2e" },
+    { label: "Jawa",     hue: "#a67c2a" },
+    { label: "Kalimantan", hue: "#3d5a4c" },
+    { label: "Sulawesi", hue: "#4a5c6e" },
+    { label: "Nusa",     hue: "#6b4a3a" },
+    { label: "Papua",    hue: "#5a3d5c" },
   ];
 
-  const ICONS = {
-    flame: '<path d="M12 3c1 3-1 4-1 6 2 0 3 1 3 3 0 3-2 5-2 5s-2-2-2-5c0-2 1-3 3-3-1-2-2-3-1-6z"/>',
-    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/>',
-    wave: '<path d="M3 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/><path d="M3 10c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/>',
-    star: '<path d="M12 3l2.2 5.6L20 9.3l-4.3 3.9L17 19l-5-3.2L7 19l1.3-5.8L4 9.3l5.8-.7z"/>',
-    leaf: '<path d="M6 20c8 0 12-6 12-14-8 0-14 4-14 12 0 1 0 2 2 2z"/><path d="M6 20c2-4 5-7 10-10"/>',
-    mountain: '<path d="M3 19l6-10 4 6 2-3 6 7z"/>',
-  };
-
-  function iconSvg(name) {
-    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${
-      ICONS[name] || ICONS.star
-    }</svg>`;
-  }
-
   let overlay, canvas, ctx, playArea, orbsLayer, progressEl, closeBtn, completePanel;
-  let W = 0,
-    H = 0,
-    dpr = 1;
+  let W = 0, H = 0, dpr = 1;
   let orbs = [];
-  let center = { x: 0, y: 0, r: 30 };
+  let center = { x: 0, y: 0, r: 34 };
   let particles = [];
+  let threads = []; // animated connection threads
   let active = false;
   let completed = false;
   let rafId = null;
   let closeTimer = null;
   let onCompleteCb = null;
   let initialized = false;
+  let startTime = 0;
 
-  function qs(id) {
-    return document.getElementById(id);
-  }
+  function qs(id) { return document.getElementById(id); }
 
   function ensureDom() {
     if (initialized) return;
@@ -76,12 +57,14 @@ PJ.Stages["sumpah-pemuda"] = (function () {
     completePanel = qs("stageCompletePanel");
     const completeBtn = qs("stageCompleteBtn");
 
-    closeBtn.addEventListener("click", () => close(false));
-    if (completeBtn) completeBtn.addEventListener("click", () => close(true));
+    closeBtn.addEventListener("pointerup", (e) => { e.preventDefault(); close(false); });
+    closeBtn.addEventListener("click", (e) => e.preventDefault());
+    if (completeBtn) {
+      completeBtn.addEventListener("pointerup", (e) => { e.preventDefault(); close(true); });
+      completeBtn.addEventListener("click", (e) => e.preventDefault());
+    }
 
-    window.addEventListener("resize", () => {
-      if (active) configure();
-    });
+    window.addEventListener("resize", () => { if (active) configure(); });
     document.addEventListener("keydown", (e) => {
       if (active && e.key === "Escape") close(false);
     });
@@ -94,7 +77,7 @@ PJ.Stages["sumpah-pemuda"] = (function () {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     W = rect.width;
     H = rect.height;
-    if (W === 0 || H === 0) return; // guard against measuring before layout is ready
+    if (W === 0 || H === 0) return;
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -107,10 +90,10 @@ PJ.Stages["sumpah-pemuda"] = (function () {
     center = {
       x: W / 2,
       y: H / 2,
-      r: Math.max(26, Math.min(W, H) * 0.06),
+      r: Math.max(28, Math.min(W, H) * 0.055),
     };
-    const radiusX = W * 0.34;
-    const radiusY = H * 0.34;
+    const radiusX = W * 0.32;
+    const radiusY = H * 0.30;
     orbs.forEach((orb, i) => {
       const angle = (i / ORB_COUNT) * Math.PI * 2 - Math.PI / 2;
       orb.x = center.x + Math.cos(angle) * radiusX;
@@ -120,6 +103,7 @@ PJ.Stages["sumpah-pemuda"] = (function () {
 
   function positionOrbButtons() {
     orbs.forEach((orb) => {
+      if (!orb.el) return;
       orb.el.style.left = orb.x + "px";
       orb.el.style.top = orb.y + "px";
     });
@@ -130,11 +114,21 @@ PJ.Stages["sumpah-pemuda"] = (function () {
     orbs.forEach((orb) => {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "orb";
-      btn.style.setProperty("--orb-color", orb.color);
-      btn.setAttribute("aria-label", `Titik ${orb.id + 1}, belum tersambung`);
-      btn.innerHTML = `<span class="orb__ring"></span><span class="orb__icon">${iconSvg(orb.icon)}</span>`;
-      btn.addEventListener("click", () => connectOrb(orb));
+      btn.className = "orb orb--solemn";
+      btn.style.setProperty("--orb-color", orb.hue);
+      btn.setAttribute("aria-label", `${orb.label}, belum tersambung`);
+      btn.innerHTML = `
+        <span class="orb__ring"></span>
+        <span class="orb__core"></span>
+        <span class="orb__label">${orb.label}</span>
+      `;
+      // pointerup is the primary path; click as fallback
+      btn.addEventListener("pointerup", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        connectOrb(orb);
+      });
+      btn.addEventListener("click", (e) => e.preventDefault());
       orb.el = btn;
       orbsLayer.appendChild(btn);
     });
@@ -143,15 +137,16 @@ PJ.Stages["sumpah-pemuda"] = (function () {
   function resetState() {
     orbs = ORBS_DEF.map((def, i) => ({
       id: i,
-      color: def.color,
-      icon: def.icon,
+      label: def.label,
+      hue: def.hue,
       connected: false,
-      x: 0,
-      y: 0,
+      x: 0, y: 0,
       el: null,
+      connectT: 0,
     }));
     completed = false;
     particles = [];
+    threads = [];
     buildOrbButtons();
   }
 
@@ -160,47 +155,67 @@ PJ.Stages["sumpah-pemuda"] = (function () {
   }
 
   function updateProgressLabel() {
-    if (progressEl) progressEl.textContent = `${connectedCount()} / ${ORB_COUNT} TERSAMBUNG`;
+    if (progressEl) {
+      progressEl.textContent = `${connectedCount()} / ${ORB_COUNT} SUARA`;
+    }
   }
 
   function connectOrb(orb) {
     if (!active || completed || orb.connected) return;
     orb.connected = true;
+    orb.connectT = performance.now();
     orb.el.classList.add("orb--connected");
     orb.el.disabled = true;
-    orb.el.setAttribute("aria-label", `Titik ${orb.id + 1}, tersambung`);
-    spawnBurst(orb.x, orb.y);
-    spawnBurst(center.x, center.y);
+    orb.el.setAttribute("aria-label", `${orb.label}, tersambung`);
+    spawnDust(orb.x, orb.y, orb.hue);
+    spawnDust(center.x, center.y, GOLD);
+    threads.push({
+      from: { x: orb.x, y: orb.y },
+      to: { x: center.x, y: center.y },
+      t: 0,
+      color: orb.hue,
+    });
     updateProgressLabel();
 
     if (connectedCount() === ORB_COUNT) {
-      completed = true; // lock further input immediately, before the reveal delay
-      setTimeout(triggerCompletion, 550);
+      completed = true;
+      setTimeout(triggerCompletion, 700);
     } else {
-      // Keyboard users: disabling this button drops focus to <body>, which
-      // is disorienting. Hand focus to the next unconnected orb instead,
-      // so Tab/Enter can keep going without hunting for where focus went.
       const next = orbs.find((o) => !o.connected);
       if (next && next.el) next.el.focus({ preventScroll: true });
     }
   }
 
-  function spawnBurst(x, y) {
-    for (let i = 0; i < 14; i++) {
+  function spawnDust(x, y, color) {
+    for (let i = 0; i < 18; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 1.1 + Math.random() * 2.4;
+      const speed = 0.6 + Math.random() * 1.8;
       particles.push({
-        x,
-        y,
+        x, y,
         vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
+        vy: Math.sin(angle) * speed - 0.4,
         life: 1,
+        color: color || GOLD,
+        size: 1.2 + Math.random() * 1.8,
       });
     }
   }
 
   function triggerCompletion() {
     if (!completePanel) return;
+    // final burst from center
+    for (let i = 0; i < 40; i++) {
+      const angle = (i / 40) * Math.PI * 2;
+      const speed = 1.5 + Math.random() * 2.5;
+      particles.push({
+        x: center.x, y: center.y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 1.2,
+        color: GOLD,
+        size: 1.5 + Math.random() * 2,
+      });
+    }
     completePanel.hidden = false;
     requestAnimationFrame(() => {
       completePanel.classList.add("is-in");
@@ -209,75 +224,121 @@ PJ.Stages["sumpah-pemuda"] = (function () {
     });
   }
 
-  function drawLine(x1, y1, x2, y2, color, width, glow) {
+  function drawThread(from, to, progress, color) {
+    const t = Math.min(1, progress);
+    const mx = from.x + (to.x - from.x) * t;
+    const my = from.y + (to.y - from.y) * t;
+
     ctx.save();
     ctx.strokeStyle = color;
-    ctx.lineWidth = width;
+    ctx.lineWidth = 1.6;
     ctx.lineCap = "round";
-    if (glow) {
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 16;
-    }
+    ctx.globalAlpha = 0.85;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 10;
     ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
+    ctx.moveTo(from.x, from.y);
+    // slight curve for organic feel
+    const cx = (from.x + to.x) / 2 + (to.y - from.y) * 0.08;
+    const cy = (from.y + to.y) / 2 - (to.x - from.x) * 0.08;
+    ctx.quadraticCurveTo(cx, cy, mx, my);
     ctx.stroke();
     ctx.restore();
   }
 
-  function render() {
+  function render(now) {
     if (!active) return;
+    const t = (now - startTime) / 1000;
     ctx.clearRect(0, 0, W, H);
 
-    // ambient center glow
-    const glowR = center.r * 3.6;
+    // subtle radial atmosphere
+    const atm = ctx.createRadialGradient(center.x, center.y, 0, center.x, center.y, Math.max(W, H) * 0.55);
+    atm.addColorStop(0, "rgba(201,162,39,0.04)");
+    atm.addColorStop(0.5, "rgba(0,0,0,0)");
+    atm.addColorStop(1, "rgba(0,0,0,0.25)");
+    ctx.fillStyle = atm;
+    ctx.fillRect(0, 0, W, H);
+
+    // center glow (slow pulse)
+    const pulse = 1 + Math.sin(t * 1.1) * 0.06;
+    const glowR = center.r * 4.2 * pulse;
     const grad = ctx.createRadialGradient(center.x, center.y, 2, center.x, center.y, glowR);
-    grad.addColorStop(0, "rgba(234,200,115,0.32)");
+    grad.addColorStop(0, "rgba(234,200,115,0.28)");
+    grad.addColorStop(0.45, "rgba(201,162,39,0.08)");
     grad.addColorStop(1, "rgba(234,200,115,0)");
     ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.arc(center.x, center.y, glowR, 0, Math.PI * 2);
     ctx.fill();
 
-    // connection lines
+    // connection threads
+    threads.forEach((th) => {
+      th.t = Math.min(1, th.t + 0.035);
+      drawThread(th.from, th.to, th.t, th.color);
+    });
+    // completed threads stay fully drawn in gold
     orbs.forEach((o) => {
-      if (o.connected) drawLine(o.x, o.y, center.x, center.y, "rgba(234,200,115,0.9)", 2.6, true);
+      if (o.connected) {
+        const age = (now - o.connectT) / 1000;
+        const alpha = Math.min(1, age * 2);
+        ctx.save();
+        ctx.globalAlpha = 0.55 * alpha;
+        ctx.strokeStyle = GOLD;
+        ctx.lineWidth = 1.8;
+        ctx.lineCap = "round";
+        ctx.shadowColor = GOLD;
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.moveTo(o.x, o.y);
+        const cx = (o.x + center.x) / 2 + (center.y - o.y) * 0.08;
+        const cy = (o.y + center.y) / 2 - (center.x - o.x) * 0.08;
+        ctx.quadraticCurveTo(cx, cy, center.x, center.y);
+        ctx.stroke();
+        ctx.restore();
+      }
     });
 
-    // center node — layered rings for a "hub" feel
+    // center node — layered, solemn
     ctx.save();
-    const t = performance.now() / 1000;
-    const pulseR = center.r + Math.sin(t * 1.3) * 3;
-    ctx.strokeStyle = "rgba(201,162,39,0.35)";
-    ctx.lineWidth = 1.5;
+    const pr = center.r + Math.sin(t * 1.2) * 2.2;
+    // outer ring
+    ctx.strokeStyle = "rgba(201,162,39,0.28)";
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.arc(center.x, center.y, pulseR + 12, 0, Math.PI * 2);
+    ctx.arc(center.x, center.y, pr + 14, 0, Math.PI * 2);
     ctx.stroke();
-
-    ctx.fillStyle = "#1f1a14";
-    ctx.strokeStyle = "#c9a227";
-    ctx.lineWidth = 2;
+    // main disc
+    ctx.fillStyle = "#16120e";
+    ctx.strokeStyle = GOLD_DIM;
+    ctx.lineWidth = 1.8;
     ctx.beginPath();
-    ctx.arc(center.x, center.y, pulseR, 0, Math.PI * 2);
+    ctx.arc(center.x, center.y, pr, 0, Math.PI * 2);
     ctx.fill();
+    ctx.stroke();
+    // inner mark
+    ctx.strokeStyle = "rgba(234,200,115,0.55)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(center.x, center.y, pr * 0.45, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
 
-    // particles
+    // dust particles
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
       p.x += p.vx;
       p.y += p.vy;
-      p.life -= 0.025;
+      p.vy += 0.015; // slight gravity
+      p.life -= 0.018;
       if (p.life <= 0) {
         particles.splice(i, 1);
         continue;
       }
       ctx.save();
       ctx.globalAlpha = Math.max(0, p.life);
-      ctx.fillStyle = GOLD;
+      ctx.fillStyle = p.color;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 2.4, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
@@ -293,20 +354,36 @@ PJ.Stages["sumpah-pemuda"] = (function () {
     }
     onCompleteCb = (opts && opts.onComplete) || function () {};
     resetState();
+    startTime = performance.now();
+
+    // update topbar copy for solemn tone
+    const hint = overlay.querySelector(".stage-overlay__hint");
+    if (hint) {
+      hint.textContent = "Ketuk setiap suara daerah hingga semua tersambung ke pusat tekad.";
+    }
+    const eyebrow = overlay.querySelector(".stage-overlay__heading .eyebrow");
+    if (eyebrow) eyebrow.textContent = "Sumpah Pemuda · Satukan Suara";
+
+    // completion panel copy
+    const title = completePanel.querySelector(".stage-complete__title");
+    const body = completePanel.querySelector(".stage-complete__body");
+    if (title) title.textContent = "Satu Nusa · Satu Bangsa · Satu Bahasa";
+    if (body) {
+      body.textContent =
+        "Dari penjuru yang berbeda, satu tekad yang sama. Ikrar yang menjadi fondasi persatuan menuju kemerdekaan.";
+    }
 
     overlay.hidden = false;
     completePanel.hidden = true;
     completePanel.classList.remove("is-in");
     active = true;
 
-    // layout requires the overlay to be visible (non-zero size) first
     requestAnimationFrame(() => {
       overlay.classList.add("is-open");
       configure();
       updateProgressLabel();
       if (rafId) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(render);
-      // move focus into the game for keyboard users
       if (orbs[0] && orbs[0].el) orbs[0].el.focus({ preventScroll: true });
     });
   }
@@ -318,7 +395,6 @@ PJ.Stages["sumpah-pemuda"] = (function () {
     overlay.classList.remove("is-open");
     if (closeTimer) clearTimeout(closeTimer);
     closeTimer = setTimeout(() => {
-      // guard: a fast reopen in the meantime may have set active back to true
       if (!active) overlay.hidden = true;
       closeTimer = null;
     }, 320);

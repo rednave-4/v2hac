@@ -1,5 +1,7 @@
 /* ==========================================================================
-   PERJUANGAN — main.js  (v2.1 — bulletproof entrance click/touch)
+   PERJUANGAN — main.js
+   Entrance 1 → Entrance 2 → Main Map
+   Bulletproof click/touch via #e1Hit full-screen button
    ========================================================================== */
 
 (function () {
@@ -28,13 +30,12 @@
     });
   }
 
-  // ---------- Entrance 1 ----------
   function initEntrance1() {
     const canvas = document.getElementById("flagCanvas");
     try {
       flagInstance = PJ.FlagCloth(canvas);
     } catch (err) {
-      console.warn("[PERJUANGAN] flag animation failed to start:", err);
+      console.warn("[PERJUANGAN] flag animation failed:", err);
       flagInstance = null;
     }
 
@@ -57,28 +58,25 @@
       if (e && e.type === "keydown") {
         if (e.key !== " " && e.key !== "Enter" && e.code !== "Space") return;
       }
-      // only primary pointer
       if (e && typeof e.isPrimary === "boolean" && !e.isPrimary) return;
-
       if (e) {
         e.preventDefault();
         e.stopPropagation();
       }
       advancedFromE1 = true;
-      console.log("[PERJUANGAN] Entrance 1 advanced via", e ? e.type : "unknown");
+      console.log("[PERJUANGAN] advanced via", e ? e.type : "?");
       leaveEntrance1();
     };
 
-    // Bind to the dedicated full-screen hit button (most reliable)
+    // Primary: dedicated full-screen hit button
     if (hit) {
-      hit.addEventListener("pointerup", advance, { passive: false });
-      hit.addEventListener("click", advance);
-      hit.addEventListener("touchend", advance, { passive: false });
+      ["pointerup", "click", "touchend"].forEach((evt) => {
+        hit.addEventListener(evt, advance, { passive: false });
+      });
     }
-    // Also bind to the section itself as backup
+    // Backup on section
     screens.entrance1.addEventListener("pointerup", advance, { passive: false });
     screens.entrance1.addEventListener("click", advance);
-
     document.addEventListener("keydown", advance, true);
 
     screens.entrance1._advanceHandler = advance;
@@ -96,9 +94,9 @@
         screens.entrance1.removeEventListener("pointerup", h);
         screens.entrance1.removeEventListener("click", h);
         if (hit) {
-          hit.removeEventListener("pointerup", h);
-          hit.removeEventListener("click", h);
-          hit.removeEventListener("touchend", h);
+          ["pointerup", "click", "touchend"].forEach((evt) => {
+            hit.removeEventListener(evt, h);
+          });
         }
       }
       screens.entrance1.hidden = true;
@@ -106,13 +104,12 @@
     }, 700);
   }
 
-  // ---------- Entrance 2 ----------
   function initEntrance2() {
     const ctaBtn = document.getElementById("ctaEnterMap");
     if (!ctaBtn) return;
     ctaBtn.style.pointerEvents = "auto";
     ctaBtn.style.position = "relative";
-    ctaBtn.style.zIndex = "10";
+    ctaBtn.style.zIndex = "20";
 
     const goMap = (e) => {
       if (e) {
@@ -129,19 +126,18 @@
         }
       }, 650);
     };
-    ctaBtn.addEventListener("pointerup", goMap, { passive: false });
-    ctaBtn.addEventListener("click", goMap);
-    ctaBtn.addEventListener("touchend", goMap, { passive: false });
+    ["pointerup", "click", "touchend"].forEach((evt) => {
+      ctaBtn.addEventListener(evt, goMap, { passive: false });
+    });
   }
 
-  // ---------- Hidden dev toggle ----------
   function initDevToggle() {
     document.addEventListener("keydown", (e) => {
       if (e.ctrlKey && e.shiftKey && (e.key === "D" || e.key === "d")) {
         PJ.devMode = !PJ.devMode;
         const badge = document.getElementById("devBadge");
         if (badge) badge.hidden = !PJ.devMode;
-        console.log(`[PERJUANGAN] dev mode ${PJ.devMode ? "ON" : "OFF"}`);
+        console.log("[PERJUANGAN] dev mode", PJ.devMode ? "ON" : "OFF");
         document.dispatchEvent(new CustomEvent("pj:devmodechange"));
       }
     });
