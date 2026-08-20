@@ -1461,3 +1461,45 @@ button {
     grid-template-columns: 1fr !important;
   }
 }
+
+
+/* ==========================================================================
+   CRITICAL: inactive screens must never steal clicks
+   ========================================================================== */
+.screen[hidden],
+.screen:not(.is-active) {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+.screen.is-active {
+  display: flex !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+  opacity: 1;
+}
+/* entrance1 opacity overrides must not keep it interactive when inactive */
+#entrance1:not(.is-active) {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  display: none !important;
+}
+#entrance1.is-active {
+  display: flex !important;
+  pointer-events: auto !important;
+}
+#e1Hit:disabled,
+#entrance1:not(.is-active) #e1Hit {
+  pointer-events: none !important;
+  display: none !important;
+}
+/* CTA on entrance 2 must be clickable */
+#entrance2 .credits,
+#entrance2 #ctaContinue {
+  position: relative;
+  z-index: 5;
+  pointer-events: auto !important;
+}
+#ctaContinue {
+  cursor: pointer;
+}

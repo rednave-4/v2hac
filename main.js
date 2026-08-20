@@ -25,8 +25,9 @@
       if (!el) return;
       if (key === name) {
         el.hidden = false;
+        el.style.display = "";
+        el.style.pointerEvents = "auto";
         el.classList.remove("is-leaving");
-        // force reflow then fade in
         void el.offsetWidth;
         requestAnimationFrame(() => {
           el.classList.add("is-active");
@@ -35,6 +36,7 @@
         el.classList.remove("is-active");
         el.classList.remove("is-leaving");
         el.hidden = true;
+        el.style.pointerEvents = "none";
       }
     });
   }
@@ -121,6 +123,13 @@
 
   function leaveEntrance1() {
     screens.entrance1.classList.add("is-leaving");
+    // Immediately kill the full-screen hit layer so it cannot block later screens
+    const hitNow = document.getElementById("e1Hit");
+    if (hitNow) {
+      hitNow.style.pointerEvents = "none";
+      hitNow.style.display = "none";
+      hitNow.disabled = true;
+    }
     setTimeout(() => {
       if (flagInstance) flagInstance.stop();
       const h = screens.entrance1._advanceHandler;
@@ -133,8 +142,18 @@
           ["pointerup", "click", "touchend"].forEach((evt) => hit.removeEventListener(evt, h));
         }
       }
+      // Force-hide entrance1 before showing entrance2
+      screens.entrance1.hidden = true;
+      screens.entrance1.classList.remove("is-active", "is-leaving", "bg-in");
       goTo("entrance2");
       applyI18nDOM();
+      // Ensure CTA is interactive
+      const cta = document.getElementById("ctaContinue");
+      if (cta) {
+        cta.style.pointerEvents = "auto";
+        cta.style.position = "relative";
+        cta.style.zIndex = "20";
+      }
     }, 700);
   }
 
