@@ -1503,3 +1503,27 @@ button {
 #ctaContinue {
   cursor: pointer;
 }
+
+
+/* Force interactive controls */
+#ctaContinue,
+#btnModeLearn,
+#btnModeGame,
+.btn.btn--primary {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  position: relative;
+  z-index: 40 !important;
+}
+#entrance2.is-active,
+#modeSelect.is-active {
+  z-index: 20 !important;
+  pointer-events: auto !important;
+}
+#entrance2 .credits {
+  position: relative;
+  z-index: 30;
+  pointer-events: auto !important;
+}
+/* Hide e1-hit if leftover in old caches */
+.e1-hit { display: none !important; pointer-events: none !important; }

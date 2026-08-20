@@ -24,7 +24,6 @@
         <p class="title-accent" data-i18n="e1_accent">Bangsa Indonesia</p>
       </div>
       <p class="e1-hint" id="e1Hint" data-i18n="e1_hint">Tekan spasi atau klik untuk melanjutkan</p>
-      <button type="button" id="e1Hit" class="e1-hit" aria-label="Continue"></button>
     </section>
 
     <!-- ENTRANCE 2 -->
@@ -36,7 +35,7 @@
         <div class="credits-divider"></div>
         <h2 data-i18n="e2_heading">Dibuat untuk Hackathon</h2>
         <p class="maker" data-i18n="e2_maker">— Nama Pembuat —</p>
-        <button class="btn btn--primary" id="ctaContinue" data-i18n="e2_cta">Lanjutkan</button>
+        <button type="button" class="btn btn--primary" id="ctaContinue" data-i18n="e2_cta" onclick="window.__pjGoMode&&window.__pjGoMode(event)">Lanjutkan</button>
       </div>
     </section>
 
@@ -48,13 +47,13 @@
         <p class="eyebrow" data-i18n="mode_title">Pilih Mode</p>
         <p class="mode-sub" data-i18n="mode_sub">Bagaimana kamu ingin menempuh perjalanan ini?</p>
         <div class="mode-cards">
-          <button type="button" class="mode-card" id="btnModeLearn">
+          <button type="button" class="mode-card" id="btnModeLearn" onclick="window.__pjGoLearn&&window.__pjGoLearn(event)">
             <span class="mode-card__tag">01</span>
             <span class="mode-card__title" data-i18n="mode_learn_title">Mode Belajar</span>
             <span class="mode-card__desc" data-i18n="mode_learn_desc">Pelajari sejarah kemerdekaan secara mendalam melalui artikel lengkap setiap babak perjuangan.</span>
             <span class="mode-card__cta" data-i18n="mode_learn_cta">Mulai Belajar</span>
           </button>
-          <button type="button" class="mode-card mode-card--game" id="btnModeGame">
+          <button type="button" class="mode-card mode-card--game" id="btnModeGame" onclick="window.__pjGoGame&&window.__pjGoGame(event)">
             <span class="mode-card__tag">02</span>
             <span class="mode-card__title" data-i18n="mode_game_title">Mode Game</span>
             <span class="mode-card__desc" data-i18n="mode_game_desc">Jelajahi peta perjuangan, selesaikan misi, dan rasakan garis besar sejarah lewat pengalaman interaktif.</span>

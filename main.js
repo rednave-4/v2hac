@@ -1,18 +1,20 @@
 /* ==========================================================================
-   PERJUANGAN — main.js v2.2.1
-   Flow: E1 → E2 → Mode Select → Learn | Game
+   PERJUANGAN — main.js v2.2.2
+   Simple, reliable screen flow. Inline onclick fallbacks on critical buttons.
    ========================================================================== */
 
 (function () {
   window.PJ = window.PJ || {};
   PJ.devMode = false;
 
+  const $ = (id) => document.getElementById(id);
+
   const screens = {
-    entrance1: document.getElementById("entrance1"),
-    entrance2: document.getElementById("entrance2"),
-    modeSelect: document.getElementById("modeSelect"),
-    learnMode: document.getElementById("learnMode"),
-    mainMap: document.getElementById("mainMap"),
+    entrance1: $("entrance1"),
+    entrance2: $("entrance2"),
+    modeSelect: $("modeSelect"),
+    learnMode: $("learnMode"),
+    mainMap: $("mainMap"),
   };
 
   let flagInstance = null;
@@ -20,32 +22,32 @@
   let mapInitialized = false;
   let learnInitialized = false;
 
-  function goTo(name) {
-    Object.entries(screens).forEach(([key, el]) => {
+  function hideAllScreens() {
+    Object.values(screens).forEach((el) => {
       if (!el) return;
-      if (key === name) {
-        el.hidden = false;
-        el.style.display = "";
-        el.style.pointerEvents = "auto";
-        el.classList.remove("is-leaving");
-        void el.offsetWidth;
-        requestAnimationFrame(() => {
-          el.classList.add("is-active");
-        });
-      } else {
-        el.classList.remove("is-active");
-        el.classList.remove("is-leaving");
-        el.hidden = true;
-        el.style.pointerEvents = "none";
-      }
+      el.classList.remove("is-active", "is-leaving");
+      el.hidden = true;
+      el.style.pointerEvents = "none";
     });
+  }
+
+  function goTo(name) {
+    hideAllScreens();
+    const el = screens[name];
+    if (!el) return;
+    el.hidden = false;
+    el.style.pointerEvents = "auto";
+    el.style.display = "flex";
+    void el.offsetWidth;
+    el.classList.add("is-active");
   }
 
   function applyI18nDOM() {
     document.querySelectorAll("[data-i18n]").forEach((el) => {
       const key = el.getAttribute("data-i18n");
-      if (key) el.textContent = PJ.I18N.t(key);
+      if (key && PJ.I18N) el.textContent = PJ.I18N.t(key);
     });
+    if (!PJ.I18N) return;
     const other = PJ.I18N.getLang() === "id" ? "EN" : "ID";
     document.querySelectorAll(".lang-switch").forEach((btn) => {
       btn.textContent = other;
@@ -54,187 +56,136 @@
 
   function bindLangButtons() {
     ["langBtnE2", "langBtnMode", "langBtnLearn", "langBtnGame"].forEach((id) => {
-      const btn = document.getElementById(id);
+      const btn = $(id);
       if (!btn) return;
-      btn.addEventListener("click", (e) => {
+      btn.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
         PJ.I18N.toggle();
-      });
+      };
     });
     document.addEventListener("pj:langchange", () => {
       applyI18nDOM();
-      if (PJ.MapController && typeof PJ.MapController.applyI18n === "function") {
-        PJ.MapController.applyI18n();
-      }
-      if (PJ.LearnController && typeof PJ.LearnController.applyI18n === "function") {
-        PJ.LearnController.applyI18n();
-      }
+      if (PJ.MapController && PJ.MapController.applyI18n) PJ.MapController.applyI18n();
+      if (PJ.LearnController && PJ.LearnController.applyI18n) PJ.LearnController.applyI18n();
     });
   }
 
+  /* ---------- Entrance 1 ---------- */
   function initEntrance1() {
-    const canvas = document.getElementById("flagCanvas");
     try {
-      flagInstance = PJ.FlagCloth(canvas);
+      flagInstance = PJ.FlagCloth($("flagCanvas"));
     } catch (err) {
       console.warn("[PERJUANGAN] flag failed:", err);
     }
 
     const bg = screens.entrance1;
-    const flagWrap = document.getElementById("flagWrap");
-    const textBlock = document.getElementById("e1Text");
-    const hint = document.getElementById("e1Hint");
-    const hit = document.getElementById("e1Hit");
+    const flagWrap = $("flagWrap");
+    const textBlock = $("e1Text");
+    const hint = $("e1Hint");
 
     requestAnimationFrame(() => bg.classList.add("bg-in"));
     setTimeout(() => {
-      flagWrap.classList.add("is-in");
+      if (flagWrap) flagWrap.classList.add("is-in");
       if (flagInstance) flagInstance.start();
     }, 300);
-    setTimeout(() => textBlock.classList.add("is-in"), 1000);
-    setTimeout(() => hint.classList.add("is-in"), 1600);
+    setTimeout(() => { if (textBlock) textBlock.classList.add("is-in"); }, 1000);
+    setTimeout(() => { if (hint) hint.classList.add("is-in"); }, 1600);
 
     const advance = (e) => {
       if (advancedFromE1) return;
       if (e && e.type === "keydown") {
         if (e.key !== " " && e.key !== "Enter" && e.code !== "Space") return;
-      }
-      if (e && typeof e.isPrimary === "boolean" && !e.isPrimary) return;
-      if (e) {
         e.preventDefault();
-        e.stopPropagation();
       }
       advancedFromE1 = true;
-      leaveEntrance1();
-    };
-
-    if (hit) {
-      ["pointerup", "click", "touchend"].forEach((evt) => {
-        hit.addEventListener(evt, advance, { passive: false });
-      });
-    }
-    screens.entrance1.addEventListener("pointerup", advance, { passive: false });
-    screens.entrance1.addEventListener("click", advance);
-    document.addEventListener("keydown", advance, true);
-    screens.entrance1._advanceHandler = advance;
-    screens.entrance1._hitEl = hit;
-  }
-
-  function leaveEntrance1() {
-    screens.entrance1.classList.add("is-leaving");
-    // Immediately kill the full-screen hit layer so it cannot block later screens
-    const hitNow = document.getElementById("e1Hit");
-    if (hitNow) {
-      hitNow.style.pointerEvents = "none";
-      hitNow.style.display = "none";
-      hitNow.disabled = true;
-    }
-    setTimeout(() => {
       if (flagInstance) flagInstance.stop();
-      const h = screens.entrance1._advanceHandler;
-      const hit = screens.entrance1._hitEl;
-      if (h) {
-        document.removeEventListener("keydown", h, true);
-        screens.entrance1.removeEventListener("pointerup", h);
-        screens.entrance1.removeEventListener("click", h);
-        if (hit) {
-          ["pointerup", "click", "touchend"].forEach((evt) => hit.removeEventListener(evt, h));
-        }
-      }
-      // Force-hide entrance1 before showing entrance2
-      screens.entrance1.hidden = true;
-      screens.entrance1.classList.remove("is-active", "is-leaving", "bg-in");
       goTo("entrance2");
       applyI18nDOM();
-      // Ensure CTA is interactive
-      const cta = document.getElementById("ctaContinue");
-      if (cta) {
-        cta.style.pointerEvents = "auto";
-        cta.style.position = "relative";
-        cta.style.zIndex = "20";
-      }
-    }, 700);
+      console.log("[PERJUANGAN] → entrance2");
+    };
+
+    // Click anywhere on entrance1 section
+    screens.entrance1.addEventListener("click", advance);
+    document.addEventListener("keydown", advance);
   }
 
-  function initEntrance2() {
-    const btn = document.getElementById("ctaContinue");
-    if (!btn) return;
-    const go = (e) => {
-      if (e) {
+  /* ---------- Global navigation (also used by inline onclick) ---------- */
+  window.__pjGoMode = function (e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    goTo("modeSelect");
+    applyI18nDOM();
+    console.log("[PERJUANGAN] → mode select");
+  };
+
+  window.__pjGoLearn = function (e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    goTo("learnMode");
+    if (!learnInitialized) {
+      if (PJ.LearnController) PJ.LearnController.init();
+      learnInitialized = true;
+    } else if (PJ.LearnController && PJ.LearnController.applyI18n) {
+      PJ.LearnController.applyI18n();
+    }
+    applyI18nDOM();
+    console.log("[PERJUANGAN] → learn");
+  };
+
+  window.__pjGoGame = function (e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    goTo("mainMap");
+    if (!mapInitialized) {
+      if (PJ.MapController) PJ.MapController.init();
+      mapInitialized = true;
+    } else if (PJ.MapController && PJ.MapController.applyI18n) {
+      PJ.MapController.applyI18n();
+    }
+    applyI18nDOM();
+    console.log("[PERJUANGAN] → game");
+  };
+
+  function initButtons() {
+    const cta = $("ctaContinue");
+    if (cta) {
+      cta.onclick = window.__pjGoMode;
+    }
+    const learnBtn = $("btnModeLearn");
+    if (learnBtn) learnBtn.onclick = window.__pjGoLearn;
+    const gameBtn = $("btnModeGame");
+    if (gameBtn) gameBtn.onclick = window.__pjGoGame;
+
+    const learnBack = $("learnBackBtn");
+    if (learnBack) {
+      learnBack.onclick = (e) => {
         e.preventDefault();
-        e.stopPropagation();
-      }
-      // Direct switch — no race with overlapping timers
-      goTo("modeSelect");
-      applyI18nDOM();
-      console.log("[PERJUANGAN] → mode select");
-    };
-    ["pointerup", "click", "touchend"].forEach((evt) => {
-      btn.addEventListener(evt, go, { passive: false });
-    });
-  }
-
-  function initModeSelect() {
-    const learnBtn = document.getElementById("btnModeLearn");
-    const gameBtn = document.getElementById("btnModeGame");
-
-    const enterLearn = (e) => {
-      if (e) {
+        goTo("modeSelect");
+        applyI18nDOM();
+      };
+    }
+    const gameBack = $("gameBackBtn");
+    if (gameBack) {
+      gameBack.onclick = (e) => {
         e.preventDefault();
-        e.stopPropagation();
-      }
-      goTo("learnMode");
-      if (!learnInitialized) {
-        PJ.LearnController.init();
-        learnInitialized = true;
-      } else {
-        PJ.LearnController.applyI18n();
-      }
-      applyI18nDOM();
-      console.log("[PERJUANGAN] → learn mode");
-    };
-
-    const enterGame = (e) => {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      goTo("mainMap");
-      if (!mapInitialized) {
-        PJ.MapController.init();
-        mapInitialized = true;
-      } else if (PJ.MapController.applyI18n) {
-        PJ.MapController.applyI18n();
-      }
-      applyI18nDOM();
-      console.log("[PERJUANGAN] → game mode");
-    };
-
-    ["pointerup", "click", "touchend"].forEach((evt) => {
-      if (learnBtn) learnBtn.addEventListener(evt, enterLearn, { passive: false });
-      if (gameBtn) gameBtn.addEventListener(evt, enterGame, { passive: false });
-    });
-
-    const back = (e) => {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      goTo("modeSelect");
-      applyI18nDOM();
-    };
-    const learnBack = document.getElementById("learnBackBtn");
-    const gameBack = document.getElementById("gameBackBtn");
-    if (learnBack) learnBack.addEventListener("click", back);
-    if (gameBack) gameBack.addEventListener("click", back);
+        goTo("modeSelect");
+        applyI18nDOM();
+      };
+    }
   }
 
   function initDevToggle() {
     document.addEventListener("keydown", (e) => {
       if (e.ctrlKey && e.shiftKey && (e.key === "D" || e.key === "d")) {
         PJ.devMode = !PJ.devMode;
-        const badge = document.getElementById("devBadge");
+        const badge = $("devBadge");
         if (badge) badge.hidden = !PJ.devMode;
         document.dispatchEvent(new CustomEvent("pj:devmodechange"));
       }
@@ -245,8 +196,7 @@
     applyI18nDOM();
     bindLangButtons();
     initEntrance1();
-    initEntrance2();
-    initModeSelect();
+    initButtons();
     initDevToggle();
     goTo("entrance1");
   });
