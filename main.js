@@ -1,7 +1,7 @@
 /* ==========================================================================
    PERJUANGAN — main.js
-   Entrance 1 → Entrance 2 → Main Map
-   Bulletproof click/touch via #e1Hit full-screen button
+   Flow: E1 → E2 → Mode Select → Learn | Game
+   Language switcher + i18n refresh
    ========================================================================== */
 
 (function () {
@@ -11,32 +11,75 @@
   const screens = {
     entrance1: document.getElementById("entrance1"),
     entrance2: document.getElementById("entrance2"),
+    modeSelect: document.getElementById("modeSelect"),
+    learnMode: document.getElementById("learnMode"),
     mainMap: document.getElementById("mainMap"),
   };
 
   let flagInstance = null;
   let advancedFromE1 = false;
   let mapInitialized = false;
+  let learnInitialized = false;
 
   function goTo(name) {
     Object.entries(screens).forEach(([key, el]) => {
+      if (!el) return;
       if (key === name) {
         el.hidden = false;
         void el.offsetWidth;
         requestAnimationFrame(() => el.classList.add("is-active"));
       } else {
         el.classList.remove("is-active");
+        // keep hidden after leave animation for non-active
+        if (key !== name) {
+          setTimeout(() => {
+            if (!el.classList.contains("is-active")) el.hidden = true;
+          }, 700);
+        }
       }
     });
   }
 
+  function applyI18nDOM() {
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+      const key = el.getAttribute("data-i18n");
+      if (key) el.textContent = PJ.I18N.t(key);
+    });
+    // lang button labels show the *other* language
+    const other = PJ.I18N.getLang() === "id" ? "EN" : "ID";
+    document.querySelectorAll(".lang-switch").forEach((btn) => {
+      btn.textContent = other;
+    });
+  }
+
+  function bindLangButtons() {
+    ["langBtnE2", "langBtnMode", "langBtnLearn", "langBtnGame"].forEach((id) => {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        PJ.I18N.toggle();
+      });
+    });
+    document.addEventListener("pj:langchange", () => {
+      applyI18nDOM();
+      if (PJ.MapController && typeof PJ.MapController.applyI18n === "function") {
+        PJ.MapController.applyI18n();
+      }
+      if (PJ.LearnController && typeof PJ.LearnController.applyI18n === "function") {
+        PJ.LearnController.applyI18n();
+      }
+    });
+  }
+
+  // ---------- Entrance 1 ----------
   function initEntrance1() {
     const canvas = document.getElementById("flagCanvas");
     try {
       flagInstance = PJ.FlagCloth(canvas);
     } catch (err) {
-      console.warn("[PERJUANGAN] flag animation failed:", err);
-      flagInstance = null;
+      console.warn("[PERJUANGAN] flag failed:", err);
     }
 
     const bg = screens.entrance1;
@@ -64,21 +107,17 @@
         e.stopPropagation();
       }
       advancedFromE1 = true;
-      console.log("[PERJUANGAN] advanced via", e ? e.type : "?");
       leaveEntrance1();
     };
 
-    // Primary: dedicated full-screen hit button
     if (hit) {
       ["pointerup", "click", "touchend"].forEach((evt) => {
         hit.addEventListener(evt, advance, { passive: false });
       });
     }
-    // Backup on section
     screens.entrance1.addEventListener("pointerup", advance, { passive: false });
     screens.entrance1.addEventListener("click", advance);
     document.addEventListener("keydown", advance, true);
-
     screens.entrance1._advanceHandler = advance;
     screens.entrance1._hitEl = hit;
   }
@@ -94,24 +133,20 @@
         screens.entrance1.removeEventListener("pointerup", h);
         screens.entrance1.removeEventListener("click", h);
         if (hit) {
-          ["pointerup", "click", "touchend"].forEach((evt) => {
-            hit.removeEventListener(evt, h);
-          });
+          ["pointerup", "click", "touchend"].forEach((evt) => hit.removeEventListener(evt, h));
         }
       }
       screens.entrance1.hidden = true;
       goTo("entrance2");
+      applyI18nDOM();
     }, 700);
   }
 
+  // ---------- Entrance 2 → Mode Select ----------
   function initEntrance2() {
-    const ctaBtn = document.getElementById("ctaEnterMap");
-    if (!ctaBtn) return;
-    ctaBtn.style.pointerEvents = "auto";
-    ctaBtn.style.position = "relative";
-    ctaBtn.style.zIndex = "20";
-
-    const goMap = (e) => {
+    const btn = document.getElementById("ctaContinue");
+    if (!btn) return;
+    const go = (e) => {
       if (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -119,16 +154,76 @@
       screens.entrance2.classList.add("is-leaving");
       setTimeout(() => {
         screens.entrance2.hidden = true;
+        goTo("modeSelect");
+        applyI18nDOM();
+      }, 650);
+    };
+    ["pointerup", "click", "touchend"].forEach((evt) => {
+      btn.addEventListener(evt, go, { passive: false });
+    });
+  }
+
+  // ---------- Mode select ----------
+  function initModeSelect() {
+    const learnBtn = document.getElementById("btnModeLearn");
+    const gameBtn = document.getElementById("btnModeGame");
+
+    const enterLearn = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      screens.modeSelect.classList.add("is-leaving");
+      setTimeout(() => {
+        screens.modeSelect.hidden = true;
+        goTo("learnMode");
+        if (!learnInitialized) {
+          PJ.LearnController.init();
+          learnInitialized = true;
+        } else {
+          PJ.LearnController.applyI18n();
+        }
+        applyI18nDOM();
+      }, 500);
+    };
+
+    const enterGame = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      screens.modeSelect.classList.add("is-leaving");
+      setTimeout(() => {
+        screens.modeSelect.hidden = true;
         goTo("mainMap");
         if (!mapInitialized) {
           PJ.MapController.init();
           mapInitialized = true;
+        } else if (PJ.MapController.applyI18n) {
+          PJ.MapController.applyI18n();
         }
-      }, 650);
+        applyI18nDOM();
+      }, 500);
     };
+
     ["pointerup", "click", "touchend"].forEach((evt) => {
-      ctaBtn.addEventListener(evt, goMap, { passive: false });
+      if (learnBtn) learnBtn.addEventListener(evt, enterLearn, { passive: false });
+      if (gameBtn) gameBtn.addEventListener(evt, enterGame, { passive: false });
     });
+
+    // Back to mode select
+    const learnBack = document.getElementById("learnBackBtn");
+    const gameBack = document.getElementById("gameBackBtn");
+    const back = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      goTo("modeSelect");
+      applyI18nDOM();
+    };
+    if (learnBack) learnBack.addEventListener("click", back);
+    if (gameBack) gameBack.addEventListener("click", back);
   }
 
   function initDevToggle() {
@@ -137,15 +232,17 @@
         PJ.devMode = !PJ.devMode;
         const badge = document.getElementById("devBadge");
         if (badge) badge.hidden = !PJ.devMode;
-        console.log("[PERJUANGAN] dev mode", PJ.devMode ? "ON" : "OFF");
         document.dispatchEvent(new CustomEvent("pj:devmodechange"));
       }
     });
   }
 
   document.addEventListener("DOMContentLoaded", () => {
+    applyI18nDOM();
+    bindLangButtons();
     initEntrance1();
     initEntrance2();
+    initModeSelect();
     initDevToggle();
     goTo("entrance1");
   });

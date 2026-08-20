@@ -1,44 +1,46 @@
 # PERJUANGAN — Peta Perjuangan
-### v2.1 · Road to Merdeka (flat files)
+### v2.2 · Mode Belajar + Mode Game + ID/EN
 
-Semua file **satu level** (tidak ada subfolder).
+Semua file **satu level** (flat).
 
 ## Cara menjalankan
 
 ```bash
 python3 -m http.server 8080
-# buka http://localhost:8080
+# http://localhost:8080
 ```
 
-atau double-click `index.html`.
-
-## Daftar file (upload semua ke root repo)
+## File
 
 ```
 index.html
 style.css
+i18n.js
 data.js
 flag.js
 modal.js
 map.js
+learn.js
 main.js
 stage-sumpah-pemuda.js
 README.md
 ```
 
-Tidak ada folder `stages/`. Stage Sumpah Pemuda ada di `stage-sumpah-pemuda.js`.
+## Alur
 
-## Fitur
+1. Entrance 1 — bendera
+2. Entrance 2 — credits + **switch bahasa** (pojok kanan atas)
+3. **Pilih Mode** — Belajar | Game
+4. Mode Belajar — artikel lengkap 5 bab, progress tersimpan
+5. Mode Game — peta + stage Sumpah Pemuda
 
-- Entrance 1: bendera kain + judul → klik / spasi / touch
-- Entrance 2: credits + CTA
-- Peta 5 misi (Sumpah Pemuda → … → Agresi & Gerilya)
-- Stage playable: Sumpah Pemuda (“Satukan Suara”)
-- Progress di localStorage
-- Hook: `startMission(id)` / `markMissionComplete(id)`
-- Dev: Ctrl+Shift+D
+## Bahasa
 
-## Perbaikan klik / touch
+- Indonesia / English
+- Default: bahasa browser
+- Tersimpan di localStorage
+- Switcher di Entrance 2, Mode Select, header Belajar & Game
 
-Tombol transparan full-screen `#e1Hit` di atas semua layer dekoratif.
-Flag, vignette, teks tidak menangkap event.
+## Upload ke GitHub
+
+Hapus file lama, upload **semua file di atas** ke root repo (jangan buat subfolder).

@@ -11,6 +11,14 @@ window.PJ = window.PJ || {};
 
 PJ.MapController = (function () {
   const missions = PJ.MISSIONS;
+
+  function tField(obj) {
+    if (!obj) return "";
+    if (typeof obj === "string") return obj;
+    const lang = (PJ.I18N && PJ.I18N.getLang()) || "id";
+    return obj[lang] || obj.id || "";
+  }
+
   let progress = loadProgress(); // Set of completed ids
   let selectedId = null;
 
@@ -132,7 +140,7 @@ PJ.MapController = (function () {
     // header progress
     const total = missions.length;
     const done = completedCount();
-    els.progressLabel.textContent = `${done} / ${total} MISI`;
+    els.progressLabel.textContent = `${done} / ${total} ${PJ.I18N ? PJ.I18N.t("progress_misi") : "MISI"}`;
     if (els.progressFill) {
       els.progressFill.style.width = `${Math.round((done / total) * 100)}%`;
     }
@@ -180,7 +188,7 @@ PJ.MapController = (function () {
       btn.setAttribute("data-id", mission.id);
       btn.setAttribute(
         "aria-label",
-        `${mission.title}, ${mission.date}. Status: ${labelForState(state)}`
+        `${tField(mission.title)}, ${tField(mission.date)}. Status: ${labelForState(state)}`
       );
       btn.setAttribute("aria-pressed", selectedId === mission.id ? "true" : "false");
       btn.innerHTML = `
@@ -190,7 +198,7 @@ PJ.MapController = (function () {
           <span class="node__icon">${iconSvg(mission.icon)}</span>
           <span class="node__order">${String(mission.order).padStart(2, "0")}</span>
         </span>
-        <span class="node__label">${mission.title}</span>
+        <span class="node__label">${tField(mission.title)}</span>
       `;
       btn.addEventListener("click", () => selectMission(mission.id));
       els.nodesLayer.appendChild(btn);
@@ -200,9 +208,9 @@ PJ.MapController = (function () {
   }
 
   function labelForState(state) {
-    if (state === "completed") return "Selesai";
-    if (state === "available") return "Tersedia";
-    return "Terkunci";
+    if (state === "completed") return PJ.I18N ? PJ.I18N.t("status_completed") : "Selesai";
+    if (state === "available") return PJ.I18N ? PJ.I18N.t("status_available") : "Tersedia";
+    return PJ.I18N ? PJ.I18N.t("status_locked") : "Terkunci";
   }
 
   // ---------- panel ----------
@@ -234,12 +242,12 @@ PJ.MapController = (function () {
       state
     )}</div>
       <div class="panel__icon">${iconSvg(mission.icon)}</div>
-      <h2 class="panel__title">${mission.title}</h2>
-      <div class="panel__subtitle">${mission.subtitle}</div>
-      <div class="panel__date">${mission.date}</div>
-      <p class="panel__blurb">${mission.blurb}</p>
+      <h2 class="panel__title">${tField(mission.title)}</h2>
+      <div class="panel__subtitle">${tField(mission.subtitle)}</div>
+      <div class="panel__date">${tField(mission.date)}</div>
+      <p class="panel__blurb">${tField(mission.blurb)}</p>
       <button class="btn btn--primary panel__cta" id="startBtn" ${locked ? "disabled" : ""}>
-        ${locked ? "TERKUNCI" : "MULAI MISI"}
+        ${locked ? (PJ.I18N ? PJ.I18N.t("terkunci") : "TERKUNCI") : (PJ.I18N ? PJ.I18N.t("mulai_misi") : "MULAI MISI")}
       </button>
       ${
         !locked && state !== "completed"
@@ -267,10 +275,10 @@ PJ.MapController = (function () {
   // ---------- reset confirm modal ----------
   function confirmReset() {
     PJ.Modal.confirm({
-      title: "Ulangi Perjuangan?",
-      body: "Seluruh progres misi akan dihapus dan tidak dapat dikembalikan.",
-      confirmLabel: "YA, RESET",
-      cancelLabel: "BATAL",
+      title: PJ.I18N ? PJ.I18N.t("reset_title") : "Ulangi Perjuangan?",
+      body: PJ.I18N ? PJ.I18N.t("reset_body") : "Seluruh progres misi akan dihapus.",
+      confirmLabel: PJ.I18N ? PJ.I18N.t("ya_reset") : "YA, RESET",
+      cancelLabel: PJ.I18N ? PJ.I18N.t("batal") : "BATAL",
       onConfirm: resetProgress,
     });
   }
@@ -304,10 +312,9 @@ PJ.MapController = (function () {
 
     // Otherwise, fall back to the polished "coming soon" placeholder.
     PJ.Modal.info({
-      title: mission ? mission.title : "Misi",
-      body:
-        "Gameplay tahap ini sedang disiapkan dan akan hadir segera. Nantikan pembaruan berikutnya, Pejuang.",
-      note: "Stage gameplay coming soon",
+      title: mission ? tField(mission.title) : (PJ.I18N ? PJ.I18N.t("coming_title") : "Misi"),
+      body: PJ.I18N ? PJ.I18N.t("coming_body") : "Gameplay tahap ini sedang disiapkan.",
+      note: PJ.I18N ? PJ.I18N.t("coming_note") : "Stage gameplay coming soon",
     });
     // Hook for future stage implementations. Example:
     // window.markMissionComplete(stageId) should be called by the actual
@@ -328,5 +335,15 @@ PJ.MapController = (function () {
     console.log(`[PERJUANGAN] markMissionComplete("${stageId}")`);
   };
 
-  return { init, resetProgress };
+  function applyI18n() {
+    render();
+    const ver = document.getElementById("gameBrandVersion");
+    if (ver && PJ.I18N) ver.textContent = PJ.I18N.t("brand_version_game");
+    const rb = document.getElementById("resetBtn");
+    if (rb && PJ.I18N) rb.textContent = PJ.I18N.t("reset_progress");
+    const bb = document.getElementById("gameBackBtn");
+    if (bb && PJ.I18N) bb.textContent = PJ.I18N.t("back_modes");
+  }
+
+  return { init, resetProgress, applyI18n };
 })();

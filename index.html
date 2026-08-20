@@ -7,68 +7,114 @@
   <meta name="description" content="Road to Merdeka — sebuah perjalanan mengingat semangat perjuangan bangsa Indonesia." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Special+Elite&family=Inter:ital,wght@0,400;0,500;0,600;1,400&display=swap"
-    rel="stylesheet"
-  />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Special+Elite&family=Inter:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="app">
-    <!-- ============================== ENTRANCE 1 — FLAG SPLASH ============================== -->
+    <!-- ENTRANCE 1 -->
     <section id="entrance1" class="screen grain" aria-label="Layar pembuka">
       <div class="vignette"></div>
-
       <div class="flag-wrap" id="flagWrap">
         <canvas id="flagCanvas" aria-hidden="true"></canvas>
       </div>
-
       <div class="e1-text" id="e1Text">
-        <p class="eyebrow">Sebuah Perjalanan Mengingat</p>
-        <h1 class="title-display">SEMANGAT PERJUANGAN</h1>
-        <p class="title-accent">Bangsa Indonesia</p>
+        <p class="eyebrow" data-i18n="e1_eyebrow">Sebuah Perjalanan Mengingat</p>
+        <h1 class="title-display" data-i18n="e1_title">SEMANGAT PERJUANGAN</h1>
+        <p class="title-accent" data-i18n="e1_accent">Bangsa Indonesia</p>
       </div>
-
-      <p class="e1-hint" id="e1Hint">Tekan spasi atau klik untuk melanjutkan</p>
-
-      <!-- Full-screen invisible hit target — mouse & touch always work -->
-      <button type="button" id="e1Hit" class="e1-hit" aria-label="Lanjutkan ke layar berikutnya"></button>
+      <p class="e1-hint" id="e1Hint" data-i18n="e1_hint">Tekan spasi atau klik untuk melanjutkan</p>
+      <button type="button" id="e1Hit" class="e1-hit" aria-label="Continue"></button>
     </section>
 
-    <!-- ============================== ENTRANCE 2 — CREDITS ============================== -->
+    <!-- ENTRANCE 2 -->
     <section id="entrance2" class="screen grain" hidden aria-label="Kredit">
+      <button type="button" class="lang-switch" id="langBtnE2" aria-label="Switch language">EN</button>
       <div class="vignette"></div>
       <div class="credits">
-        <p class="eyebrow">Road to Merdeka</p>
+        <p class="eyebrow" data-i18n="e2_eyebrow">Road to Merdeka</p>
         <div class="credits-divider"></div>
-        <h2>Dibuat untuk Hackathon</h2>
-        <p class="maker">— Nama Pembuat —</p>
-        <button class="btn btn--primary" id="ctaEnterMap">Masuk ke Peta Perjuangan</button>
+        <h2 data-i18n="e2_heading">Dibuat untuk Hackathon</h2>
+        <p class="maker" data-i18n="e2_maker">— Nama Pembuat —</p>
+        <button class="btn btn--primary" id="ctaContinue" data-i18n="e2_cta">Lanjutkan</button>
       </div>
     </section>
 
-    <!-- ============================== MAIN — PETA PERJUANGAN ============================== -->
+    <!-- MODE SELECT -->
+    <section id="modeSelect" class="screen grain" hidden aria-label="Pilih mode">
+      <button type="button" class="lang-switch" id="langBtnMode" aria-label="Switch language">EN</button>
+      <div class="vignette"></div>
+      <div class="mode-select">
+        <p class="eyebrow" data-i18n="mode_title">Pilih Mode</p>
+        <p class="mode-sub" data-i18n="mode_sub">Bagaimana kamu ingin menempuh perjalanan ini?</p>
+        <div class="mode-cards">
+          <button type="button" class="mode-card" id="btnModeLearn">
+            <span class="mode-card__tag">01</span>
+            <span class="mode-card__title" data-i18n="mode_learn_title">Mode Belajar</span>
+            <span class="mode-card__desc" data-i18n="mode_learn_desc">Pelajari sejarah kemerdekaan secara mendalam melalui artikel lengkap setiap babak perjuangan.</span>
+            <span class="mode-card__cta" data-i18n="mode_learn_cta">Mulai Belajar</span>
+          </button>
+          <button type="button" class="mode-card mode-card--game" id="btnModeGame">
+            <span class="mode-card__tag">02</span>
+            <span class="mode-card__title" data-i18n="mode_game_title">Mode Game</span>
+            <span class="mode-card__desc" data-i18n="mode_game_desc">Jelajahi peta perjuangan, selesaikan misi, dan rasakan garis besar sejarah lewat pengalaman interaktif.</span>
+            <span class="mode-card__cta" data-i18n="mode_game_cta">Masuk ke Peta</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- LEARN MODE -->
+    <section id="learnMode" class="screen" hidden aria-label="Mode Belajar">
+      <header class="map-header">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"><span class="top"></span><span class="bottom"></span></span>
+          <div class="brand-text">
+            <span class="brand-title">PERJUANGAN</span>
+            <span class="brand-version" id="learnBrandVersion">Mode Belajar</span>
+          </div>
+        </div>
+        <div class="header-right">
+          <button type="button" class="lang-switch lang-switch--inline" id="langBtnLearn">EN</button>
+          <div class="progress-group">
+            <span class="progress-pill" id="learnProgressLabel">0 / 5 BAB</span>
+            <div class="progress-track"><div class="progress-fill" id="learnProgressFill"></div></div>
+          </div>
+          <button class="btn btn--ghost" id="learnResetBtn">Reset Progres</button>
+          <button class="btn btn--ghost" id="learnBackBtn">Ganti Mode</button>
+        </div>
+      </header>
+      <div class="learn-body">
+        <div class="learn-list-wrap">
+          <div id="learnList" class="learn-list"></div>
+        </div>
+        <div id="learnArticleWrap" class="learn-article-wrap" hidden>
+          <article id="learnArticle" class="learn-article"></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAIN MAP (GAME) -->
     <section id="mainMap" class="screen" hidden aria-label="Peta Perjuangan">
       <header class="map-header">
         <div class="brand">
           <span class="brand-mark" aria-hidden="true"><span class="top"></span><span class="bottom"></span></span>
           <div class="brand-text">
             <span class="brand-title">PERJUANGAN</span>
-            <span class="brand-version">v2.1 · Peta Perjuangan</span>
+            <span class="brand-version" id="gameBrandVersion">Mode Game · Peta Perjuangan</span>
           </div>
         </div>
         <div class="header-right">
+          <button type="button" class="lang-switch lang-switch--inline" id="langBtnGame">EN</button>
           <span class="dev-badge" id="devBadge" hidden>DEV MODE</span>
           <div class="progress-group">
             <span class="progress-pill" id="progressLabel">0 / 5 MISI</span>
-            <div class="progress-track" aria-hidden="true">
-              <div class="progress-fill" id="progressFill"></div>
-            </div>
+            <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
           </div>
           <button class="btn btn--ghost" id="resetBtn">Reset Progres</button>
+          <button class="btn btn--ghost" id="gameBackBtn">Ganti Mode</button>
         </div>
       </header>
-
       <div class="map-body">
         <div id="mapWrap" class="grain">
           <svg class="map-silhouette" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
@@ -78,20 +124,11 @@
                 <stop offset="100%" stop-color="#0a0908" />
               </linearGradient>
             </defs>
-            <path
-              d="M -5 90 Q 10 75 22 82 T 40 78 Q 46 65 58 68 T 72 60 Q 80 48 92 52 T 108 46 L 108 108 L -5 108 Z"
-              fill="url(#islandGrad)"
-              opacity="0.85"
-            />
-            <path
-              d="M -5 95 Q 15 84 30 90 T 55 84 Q 65 74 80 78 T 108 70 L 108 108 L -5 108 Z"
-              fill="#0f0c09"
-              opacity="0.9"
-            />
+            <path d="M -5 90 Q 10 75 22 82 T 40 78 Q 46 65 58 68 T 72 60 Q 80 48 92 52 T 108 46 L 108 108 L -5 108 Z" fill="url(#islandGrad)" opacity="0.85"/>
+            <path d="M -5 95 Q 15 84 30 90 T 55 84 Q 65 74 80 78 T 108 70 L 108 108 L -5 108 Z" fill="#0f0c09" opacity="0.9"/>
           </svg>
           <div class="fog-layer" aria-hidden="true"></div>
           <div class="embers-layer" id="embersLayer" aria-hidden="true"></div>
-
           <svg id="routeSvg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
             <defs>
               <linearGradient id="routeGradient" x1="0" y1="0" x2="1" y2="1">
@@ -103,51 +140,47 @@
             <path id="routeNext" class="route-next" vector-effect="non-scaling-stroke" />
             <path id="routeProgress" class="route-progress" vector-effect="non-scaling-stroke" />
           </svg>
-
-          <div id="nodesLayer" aria-label="Daftar misi"></div>
+          <div id="nodesLayer" aria-label="Missions"></div>
           <div class="map-vignette" aria-hidden="true"></div>
         </div>
-
-        <aside id="detailPanel" class="detail-panel" hidden aria-label="Detail misi"></aside>
+        <aside id="detailPanel" class="detail-panel" hidden aria-label="Detail"></aside>
       </div>
     </section>
 
     <div id="modalRoot"></div>
 
-    <!-- ============================== STAGE OVERLAY (Sumpah Pemuda) ============================== -->
-    <div id="stageOverlay" class="stage-overlay grain" hidden aria-label="Tahap misi">
+    <!-- STAGE OVERLAY -->
+    <div id="stageOverlay" class="stage-overlay grain" hidden aria-label="Stage">
       <div class="stage-overlay__topbar">
         <div class="stage-overlay__heading">
-          <p class="eyebrow">Sumpah Pemuda · Satukan Suara</p>
-          <p class="stage-overlay__hint">Ketuk setiap suara daerah hingga semua tersambung ke pusat tekad.</p>
+          <p class="eyebrow">Sumpah Pemuda</p>
+          <p class="stage-overlay__hint" data-i18n="stage_hint">Ketuk setiap suara daerah hingga semua tersambung ke pusat tekad.</p>
         </div>
         <div class="stage-overlay__right">
-          <span class="progress-pill" id="stageProgress">0 / 6 SUARA</span>
-          <button class="stage-overlay__close" id="stageCloseBtn" aria-label="Tutup tahap">&times;</button>
+          <span class="progress-pill" id="stageProgress">0 / 6</span>
+          <button class="stage-overlay__close" id="stageCloseBtn" aria-label="Close">&times;</button>
         </div>
       </div>
-
       <div class="stage-play-area" id="stagePlayArea">
         <canvas id="stageCanvas"></canvas>
-        <div id="stageOrbsLayer" class="stage-orbs-layer" aria-label="Titik-titik persatuan"></div>
+        <div id="stageOrbsLayer" class="stage-orbs-layer"></div>
       </div>
-
       <div class="stage-complete" id="stageCompletePanel" hidden>
-        <p class="eyebrow">Satu!</p>
-        <h3 class="stage-complete__title">Satu Nusa · Satu Bangsa · Satu Bahasa</h3>
-        <p class="stage-complete__body">
-          Dari penjuru yang berbeda, satu tekad yang sama. Ikrar yang menjadi fondasi persatuan menuju kemerdekaan.
-        </p>
-        <button class="btn btn--primary" id="stageCompleteBtn">Lanjutkan</button>
+        <p class="eyebrow" data-i18n="stage_complete_eyebrow">Satu!</p>
+        <h3 class="stage-complete__title" data-i18n="stage_complete_title">Satu Nusa · Satu Bangsa · Satu Bahasa</h3>
+        <p class="stage-complete__body" data-i18n="stage_complete_body">Dari penjuru yang berbeda, satu tekad yang sama.</p>
+        <button class="btn btn--primary" id="stageCompleteBtn" data-i18n="stage_continue">Lanjutkan</button>
       </div>
     </div>
   </div>
 
+  <script src="i18n.js"></script>
   <script src="data.js"></script>
   <script src="modal.js"></script>
   <script src="stage-sumpah-pemuda.js"></script>
   <script src="flag.js"></script>
   <script src="map.js"></script>
+  <script src="learn.js"></script>
   <script src="main.js"></script>
 </body>
 </html>
