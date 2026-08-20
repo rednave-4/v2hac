@@ -297,11 +297,26 @@ PJ.MapController = (function () {
     render();
   }
 
-  // ---------- public hooks (future stage integration) ----------
+  // ---------- public hooks (stage integration) ----------
+  // External HTML minigames (same folder as index.html on GitHub Pages)
+  const EXTERNAL_STAGES = {
+    "proklamasi": "ketikan.html",
+    "surabaya": "tes.html",
+    "agresi-gerilya": "agresi.html",
+  };
+
   window.startMission = function (stageId) {
     const mission = missions.find((m) => m.id === stageId);
 
-    // If a real mini-game is registered for this stage, launch it.
+    // 1) External HTML game → navigate away
+    if (EXTERNAL_STAGES[stageId]) {
+      const url = EXTERNAL_STAGES[stageId];
+      console.log(`[PERJUANGAN] startMission("${stageId}") → ${url}`);
+      window.location.href = url;
+      return;
+    }
+
+    // 2) In-app registered stage (e.g. Sumpah Pemuda)
     if (PJ.Stages && PJ.Stages[stageId] && typeof PJ.Stages[stageId].open === "function") {
       PJ.Stages[stageId].open({
         onComplete: () => window.markMissionComplete(stageId),
@@ -310,15 +325,12 @@ PJ.MapController = (function () {
       return;
     }
 
-    // Otherwise, fall back to the polished "coming soon" placeholder.
+    // 3) Placeholder
     PJ.Modal.info({
       title: mission ? tField(mission.title) : (PJ.I18N ? PJ.I18N.t("coming_title") : "Misi"),
       body: PJ.I18N ? PJ.I18N.t("coming_body") : "Gameplay tahap ini sedang disiapkan.",
       note: PJ.I18N ? PJ.I18N.t("coming_note") : "Stage gameplay coming soon",
     });
-    // Hook for future stage implementations. Example:
-    // window.markMissionComplete(stageId) should be called by the actual
-    // stage code upon successful completion of that stage's gameplay.
     console.log(`[PERJUANGAN] startMission("${stageId}") — stub only.`);
   };
 

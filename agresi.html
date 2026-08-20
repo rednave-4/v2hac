@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KOMANDAN 1948 — Hold The Republic</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+
+:root{
+  --bg: #14170f;
+  --bg2: #1b1f16;
+  --panel: #20241a;
+  --panel-edge: #3a3f2d;
+  --paper: #d9cfae;
+  --paper-dark: #c3b790;
+  --ink: #2a2415;
+  --text: #e7e3cf;
+  --text-dim: #9a9c85;
+  --red: #b23a2e;
+  --red-bright: #d8462f;
+  --white-ac: #eee9d6;
+  --dutch: #3d5a73;
+  --dutch-bright: #5a84a6;
+  --gold: #c8a13a;
+  --green: #4c5a3f;
+  --danger: #d8462f;
+  --ok: #7c9a5c;
+  --radius: 3px;
+  --shadow: 0 4px 18px rgba(0,0,0,.55);
+}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0; background:var(--bg);
+  color:var(--text);
+  font-family:'IBM Plex Mono',monospace;
+  overflow:hidden;
+  background-image:
+    radial-gradient(circle at 20% 15%, rgba(255,255,255,0.02), transparent 40%),
+    radial-gradient(circle at 80% 85%, rgba(255,255,255,0.02), transparent 40%);
+}
+h1,h2,h3,.display{ font-family:'Special Elite', 'Courier New', monospace; letter-spacing:.5px; }
+button{
+  font-family:'IBM Plex Mono',monospace;
+  cursor:pointer;
+  background:var(--panel);
+  color:var(--text);
+  border:1px solid var(--panel-edge);
+  border-radius:var(--radius);
+  padding:8px 12px;
+  font-size:12.5px;
+  letter-spacing:.4px;
+  transition:.12s;
+}
+button:hover:not(:disabled){ background:#2a3020; border-color:var(--gold); color:var(--white-ac); }
+button:active:not(:disabled){ transform:translateY(1px); }
+button:disabled{ opacity:.35; cursor:not-allowed; }
+button.primary{ background:var(--red); border-color:var(--red-bright); color:#fff; font-weight:600;}
+button.primary:hover:not(:disabled){ background:var(--red-bright); }
+button.ghost{ background:transparent; }
+.scrollbar::-webkit-scrollbar{width:8px; height:8px;}
+.scrollbar::-webkit-scrollbar-thumb{background:var(--panel-edge); border-radius:4px;}
+.scrollbar::-webkit-scrollbar-track{background:transparent;}
+
+/* ===================== LANGUAGE TOGGLE ===================== */
+#lang-toggle{
+  position:fixed; top:10px; right:10px; z-index:500;
+  display:flex; gap:2px; background:#0d0f09; border:1px solid var(--panel-edge);
+  border-radius:4px; padding:3px; box-shadow:var(--shadow);
+}
+#lang-toggle button{ padding:5px 10px; font-size:11px; border:none; background:transparent; }
+#lang-toggle button.active{ background:var(--red); color:#fff; }
+#lang-toggle .lt-label{ font-size:9px; color:var(--text-dim); align-self:center; padding:0 4px; text-transform:uppercase; letter-spacing:1px;}
+
+/* ===================== APP SHELL ===================== */
+#app{ display:none; height:100vh; grid-template-rows:auto 1fr; grid-template-columns:1fr; }
+#app.active{ display:grid; }
+
+#topbar{
+  display:flex; align-items:center; gap:18px;
+  background:linear-gradient(180deg,#20241a,#181c12);
+  border-bottom:2px solid var(--panel-edge);
+  padding:9px 16px;
+  font-size:12px;
+  z-index:20;
+}
+#topbar .tb-item{ display:flex; flex-direction:column; gap:1px; min-width:70px;}
+#topbar .tb-label{ font-size:9px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px;}
+#topbar .tb-val{ font-size:13px; color:var(--white-ac); font-weight:600;}
+#topbar .tb-title{ font-family:'Special Elite',monospace; font-size:16px; color:var(--red-bright); margin-right:6px;}
+#topbar .spacer{flex:1;}
+.meter{ width:80px; height:7px; background:#000; border:1px solid var(--panel-edge); border-radius:3px; overflow:hidden;}
+.meter > div{ height:100%; }
+#topbar-buttons{ display:flex; gap:6px; margin-right:96px; }
+
+#main{ display:grid; grid-template-columns: 250px 1fr 300px; grid-template-rows: 1fr 160px auto; height:100%; overflow:hidden;}
+
+#left-panel{ grid-row:1/4; background:var(--panel); border-right:1px solid var(--panel-edge); padding:12px; overflow-y:auto;}
+#center-map-wrap{ position:relative; background:radial-gradient(ellipse at center, #2a2f20 0%, #14160e 100%); overflow:hidden;}
+#right-panel{ background:var(--panel); border-left:1px solid var(--panel-edge); padding:12px; overflow-y:auto;}
+#bottom-log{ grid-column:2/3; background:#12140d; border-top:1px solid var(--panel-edge); padding:8px 12px; overflow-y:auto; font-size:11.5px;}
+footer.disclaimer{ grid-column:1/4; background:#0d0f09; padding:6px 10px; text-align:center; font-size:9.5px; color:var(--text-dim); border-top:1px solid var(--panel-edge); }
+
+.panel-title{ font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--gold); margin:0 0 8px 0; border-bottom:1px solid var(--panel-edge); padding-bottom:6px;}
+.section{ margin-bottom:16px; }
+.small{ font-size:11px; color:var(--text-dim); line-height:1.5;}
+.objective-box{ background:#181c12; border:1px solid var(--panel-edge); border-left:3px solid var(--red); padding:8px 10px; font-size:11.5px; line-height:1.5; border-radius:2px;}
+
+#svg-map{ width:100%; height:100%; display:block; }
+#map-zoom-container{ width:100%; height:100%; transform-origin: 0 0; will-change: transform; }
+.node-circle{ cursor:pointer; }
+.node-label{ font-size:11px; fill:var(--text); font-family:'IBM Plex Mono',monospace; pointer-events:none; }
+.edge-line{ stroke:#5c5744; stroke-width:2; stroke-dasharray:4 3; opacity:.55; }
+.unit-marker{ cursor:pointer; }
+.unit-marker.selected circle.ring{ stroke:var(--gold); stroke-width:3; }
+.unit-marker.hidden-unit{ opacity:.55; stroke-dasharray:2 2;}
+
+#log-list p{ margin:2px 0; }
+#log-list .turn-tag{ color:var(--gold); }
+#log-list .ev{ color:var(--white-ac); }
+#log-list .warn{ color:var(--danger); }
+#log-list .good{ color:var(--ok); }
+
+.unit-card{ background:#181c12; border:1px solid var(--panel-edge); border-radius:2px; padding:8px 10px; margin-bottom:6px; cursor:pointer; font-size:11.5px;}
+.unit-card:hover{ border-color:var(--gold); }
+.unit-card.faction-INDONESIA{ border-left:3px solid var(--red); }
+.unit-card.faction-DUTCH{ border-left:3px solid var(--dutch); }
+.unit-card .u-name{ font-weight:600; color:var(--white-ac); }
+.stat-row{ display:flex; justify-content:space-between; font-size:10.5px; color:var(--text-dim); margin-top:5px;}
+.stat-bar-wrap{ height:5px; background:#000; border-radius:3px; overflow:hidden; margin-top:2px;}
+.stat-bar{ height:100%; }
+
+.cmd-grid{ display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:10px;}
+.cmd-grid button{ width:100%; }
+
+/* ===================== OVERLAYS ===================== */
+.overlay{
+  position:fixed; inset:0; background:rgba(8,9,5,.92);
+  display:flex; align-items:center; justify-content:center; z-index:100;
+  padding:20px;
+}
+.overlay.hidden{ display:none; }
+.overlay-box{
+  max-width:640px; width:100%; background:var(--panel);
+  border:1px solid var(--panel-edge); border-radius:4px; box-shadow:var(--shadow);
+  padding:34px 38px; text-align:center;
+}
+.overlay-box h1{ font-size:30px; color:var(--red-bright); margin:0 0 6px 0; }
+.overlay-box h2{ font-size:16px; color:var(--gold); margin:0 0 22px 0; font-weight:normal;}
+.overlay-box p.lead{ font-size:15px; line-height:1.8; color:var(--white-ac); margin:10px 0;}
+.overlay-box .btn-row{ margin-top:28px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;}
+.overlay-box button{ padding:12px 22px; font-size:13px;}
+.stamp{ display:inline-block; border:2px solid var(--red); color:var(--red-bright); padding:3px 10px; font-family:'Special Elite',monospace; font-size:11px; letter-spacing:2px; transform:rotate(-3deg); margin-bottom:16px; border-radius:2px;}
+
+#modal-context, #modal-tutorial{ z-index:150; }
+.modal-inner{ max-width:720px; width:100%; max-height:82vh; overflow-y:auto; background:var(--panel); border:1px solid var(--panel-edge); border-radius:4px; padding:26px 30px; box-shadow:var(--shadow); text-align:left;}
+.modal-inner h2{ color:var(--red-bright); margin-top:0; font-size:20px;}
+.modal-inner h3{ color:var(--gold); font-size:13px; text-transform:uppercase; letter-spacing:1px; margin:18px 0 6px;}
+.modal-inner p{ font-size:12.5px; line-height:1.7; color:var(--text); margin:6px 0;}
+.tag-fact{ display:inline-block; background:var(--green); color:#fff; font-size:9.5px; padding:2px 6px; border-radius:2px; letter-spacing:.5px; margin-right:6px;}
+.tag-game{ display:inline-block; background:var(--dutch); color:#fff; font-size:9.5px; padding:2px 6px; border-radius:2px; letter-spacing:.5px; margin-right:6px;}
+.modal-close-row{ text-align:right; margin-top:16px; }
+.tut-step{ display:flex; gap:10px; align-items:flex-start; margin:10px 0; font-size:12.5px; line-height:1.5;}
+.tut-num{ background:var(--red); color:#fff; border-radius:50%; width:20px; height:20px; display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0;}
+
+.route-tag{ display:inline-block; padding:2px 8px; border-radius:10px; font-size:10px; margin:2px 3px 0 0; border:1px solid var(--panel-edge); cursor:pointer;}
+.route-tag.active{ background:var(--red); border-color:var(--red-bright); color:#fff;}
+
+.banner{ position:absolute; top:10px; left:50%; transform:translateX(-50%); background:rgba(20,23,15,.92); border:1px solid var(--gold); padding:6px 18px; border-radius:3px; font-size:12px; color:var(--gold); letter-spacing:1px; z-index:10; text-align:center;}
+
+footer.disclaimer.hidden{ display:none; }
+</style>
+</head>
+<body>
+
+<!-- ===================== LANGUAGE TOGGLE (always visible) ===================== -->
+<div id="lang-toggle">
+  <span class="lt-label">LANG</span>
+  <button id="lang-btn-EN" onclick="setLang('EN')">EN</button>
+  <button id="lang-btn-ID" onclick="setLang('ID')">ID</button>
+</div>
+
+<!-- ===================== TITLE SCREEN ===================== -->
+<div id="screen-title" class="overlay">
+  <div class="overlay-box">
+    <div class="stamp" data-i18n="title.stamp">19 DECEMBER 1948</div>
+    <h1 data-i18n="title.h1">YOGYAKARTA</h1>
+    <h2 data-i18n="title.h2">19 December 1948</h2>
+    <p class="lead" data-i18n="title.lead1">The capital has fallen.</p>
+    <p class="lead" data-i18n="title.lead2">Soekarno and Hatta have been captured.</p>
+    <p class="lead" data-i18n="title.lead3"><strong>Does the Republic fall with them?</strong></p>
+    <div class="btn-row">
+      <button class="primary" data-i18n="title.btnCommand" onclick="startGame(false)">TAKE COMMAND</button>
+      <button data-i18n="title.btnDemo" onclick="startGame(true)">PLAY DEMO (5 MIN)</button>
+      <button class="ghost" data-i18n="title.btnContext" onclick="openContext()">HISTORICAL CONTEXT</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TUTORIAL MODAL ===================== -->
+<div id="modal-tutorial" class="overlay hidden">
+  <div class="modal-inner">
+    <h2 data-i18n="tutorial.title">Field Manual</h2>
+    <p class="small" data-i18n="tutorial.intro">You command the forces of the Republic. You do not control a single soldier — you issue orders to units on the strategic map.</p>
+    <div class="tut-step"><div class="tut-num">1</div><div data-i18n="tutorial.step1">Click a unit marker on the map to select it and open the Command Panel.</div></div>
+    <div class="tut-step"><div class="tut-num">2</div><div data-i18n="tutorial.step2">Choose MOVE, then click a connected location to march there.</div></div>
+    <div class="tut-step"><div class="tut-num">3</div><div data-i18n="tutorial.step3">Use HIDE in forests, villages, or hills to conceal a unit from the Dutch.</div></div>
+    <div class="tut-step"><div class="tut-num">4</div><div data-i18n="tutorial.step4">Use SCOUT to reveal nearby enemy forces and gather intelligence.</div></div>
+    <div class="tut-step"><div class="tut-num">5</div><div data-i18n="tutorial.step5">Terrain matters — forests and hills favor guerrilla forces; roads and cities favor the Dutch.</div></div>
+    <div class="tut-step"><div class="tut-num">6</div><div data-i18n="tutorial.step6">Attacking a stronger enemy in the open is dangerous. Withdraw instead of fighting a battle you cannot win.</div></div>
+    <div class="tut-step"><div class="tut-num">7</div><div data-i18n="tutorial.step7">When ready, click END TURN. The Dutch will then move.</div></div>
+    <div class="modal-close-row"><button class="primary" data-i18n="tutorial.btnClose" onclick="closeTutorial()">UNDERSTOOD, COMMANDER</button></div>
+  </div>
+</div>
+
+<!-- ===================== HISTORICAL CONTEXT MODAL ===================== -->
+<div id="modal-context" class="overlay hidden">
+  <div class="modal-inner">
+    <h2 data-i18n="context.title">Historical Context</h2>
+    <p class="small" data-i18n="context.intro">This panel separates documented history from gameplay abstraction. <span class="tag-fact">FACT</span> marks documented history. <span class="tag-game">GAMEPLAY</span> marks an interpretation made for playability.</p>
+
+    <h3 data-i18n="context.h1">What Happened?</h3>
+    <p data-i18n="context.p1"><span class="tag-fact">FACT</span> On 19 December 1948, Dutch forces launched the second "Police Action" (Agresi Militer Belanda II), attacking Yogyakarta — then the capital of the Republic of Indonesia. Maguwo airfield and the city center were seized, and President Soekarno, Vice President Hatta, and other Republican leaders were captured and later exiled.</p>
+    <p data-i18n="context.p2"><span class="tag-fact">FACT</span> Despite the capture of its political leadership, the Republic's military did not surrender. Forces under General Soedirman, who was seriously ill with tuberculosis, withdrew from the city and continued organized resistance from the countryside.</p>
+
+    <h3 data-i18n="context.h2">Why Did the Guerrilla War Matter?</h3>
+    <p data-i18n="context.p3"><span class="tag-fact">FACT</span> Indonesian forces relied on mobility, concealment, decentralized command, and support from villages to keep resisting a materially stronger Dutch army. This demonstrated that the Republic still existed as a functioning state and armed force, even without its captured capital.</p>
+    <p data-i18n="context.p4"><span class="tag-game">GAMEPLAY</span> The specific unit stats, terrain bonuses, hiding mechanics, and detection rolls in this game are simplified abstractions designed to teach the logic of guerrilla warfare, not a simulation of any single documented battle.</p>
+
+    <h3 data-i18n="context.h3">Who Was General Soedirman?</h3>
+    <p data-i18n="context.p5"><span class="tag-fact">FACT</span> General Soedirman was the first commander-in-chief of the Indonesian armed forces. Though gravely ill, he left Yogyakarta and led guerrilla operations from the field, becoming a lasting symbol of resistance and national resolve.</p>
+
+    <h3 data-i18n="context.h4">What Was the 1 March 1949 General Offensive?</h3>
+    <p data-i18n="context.p6"><span class="tag-fact">FACT</span> On 1 March 1949, Indonesian forces carried out a coordinated attack on Yogyakarta, briefly retaking parts of the city — including areas around Fort Vredeburg — before withdrawing. The operation showed that the Republic and the TNI (Indonesian National Armed Forces) remained active and organized.</p>
+    <p data-i18n="context.p7"><span class="tag-game">GAMEPLAY</span> The "approach routes," offensive-readiness checklist, and sector-capture mechanics in this game are simplified for playability. They are not a precise recreation of the historical unit movements.</p>
+
+    <h3 data-i18n="context.h5">Why Did It Matter Internationally?</h3>
+    <p data-i18n="context.p8"><span class="tag-fact">FACT</span> News of continued Indonesian resistance strengthened the Republic's diplomatic position at the United Nations and undercut Dutch claims that the Republic had been eliminated, contributing to the pressure that eventually led toward negotiations and the transfer of sovereignty later in 1949.</p>
+
+    <h3 data-i18n="context.h6">Sources</h3>
+    <p class="small" data-i18n="context.sources">Museum Benteng Vredeburg, Yogyakarta — official history (vredeburg.id) · Dinas Kebudayaan Kota Yogyakarta (kebudayaan.jogjakota.go.id) · Indonesian national historical archives and museum records on Agresi Militer Belanda II and Serangan Umum 1 Maret 1949.</p>
+
+    <div class="modal-close-row"><button class="primary" data-i18n="context.btnClose" onclick="closeContext()">CLOSE</button></div>
+  </div>
+</div>
+
+<!-- ===================== ENDING SCREEN ===================== -->
+<div id="screen-end" class="overlay hidden">
+  <div class="overlay-box" id="end-content"></div>
+</div>
+
+<!-- ===================== MAIN APP ===================== -->
+<div id="app">
+  <div id="topbar">
+    <div class="tb-title">KOMANDAN 1948</div>
+    <div class="tb-item"><span class="tb-label" data-i18n="ui.date">Date</span><span class="tb-val" id="tb-date">—</span></div>
+    <div class="tb-item"><span class="tb-label" data-i18n="ui.turn">Turn</span><span class="tb-val" id="tb-turn">—</span></div>
+    <div class="tb-item"><span class="tb-label" data-i18n="ui.phase">Phase</span><span class="tb-val" id="tb-phase">—</span></div>
+    <div class="tb-item"><span class="tb-label" data-i18n="ui.morale">Morale</span><div class="meter"><div id="tb-morale-bar" style="background:var(--ok); width:50%;"></div></div></div>
+    <div class="tb-item"><span class="tb-label" data-i18n="ui.intel">Intel</span><div class="meter"><div id="tb-intel-bar" style="background:var(--dutch-bright); width:0%;"></div></div></div>
+    <div class="spacer"></div>
+    <div id="topbar-buttons">
+      <button data-i18n="ui.btnManual" onclick="openTutorial()">FIELD MANUAL</button>
+      <button data-i18n="title.btnContext" onclick="openContext()">HISTORICAL CONTEXT</button>
+      <button class="primary" id="btn-end-turn" data-i18n="ui.btnEndTurn" onclick="endTurn()">END TURN</button>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="left-panel">
+      <div class="panel-title" data-i18n="ui.objective">Objective</div>
+      <div class="objective-box" id="objective-text">—</div>
+      <div class="section" style="margin-top:14px;">
+        <div class="panel-title" data-i18n="ui.summaryTitle">Command Log Summary</div>
+        <div class="small" id="summary-text">—</div>
+      </div>
+      <div class="section">
+        <div class="panel-title" data-i18n="ui.forcesTitle">Forces (Indonesia)</div>
+        <div id="unit-list-id"></div>
+      </div>
+      <div class="section" id="offensive-panel" style="display:none;">
+        <div class="panel-title" data-i18n="ui.offensiveTitle">General Offensive</div>
+        <div class="small" data-i18n="ui.offensiveHint">Assign combat units to approach routes, then launch when ready.</div>
+        <div class="small" id="offensive-status" style="margin:8px 0;"></div>
+        <button class="primary" style="width:100%;" data-i18n="ui.btnLaunch" onclick="launchOffensive()">LAUNCH GENERAL OFFENSIVE</button>
+      </div>
+    </div>
+
+    <div id="center-map-wrap">
+      <div class="banner" id="phase-banner" style="display:none;"></div>
+      <div id="map-zoom-container">
+        <svg id="svg-map" viewBox="0 0 1000 650" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+    </div>
+
+    <div id="right-panel">
+      <div class="panel-title" data-i18n="ui.unitPanelTitle">Unit / Command</div>
+      <div id="unit-panel-empty" class="small" data-i18n="ui.selectUnitHint">Select a unit on the map to issue orders.</div>
+      <div id="unit-panel" style="display:none;"></div>
+    </div>
+
+    <div id="bottom-log" class="scrollbar">
+      <div id="log-list"></div>
+    </div>
+    <footer class="disclaimer hidden" id="disclaimer-footer" data-i18n="ui.disclaimer">This game is a strategic interpretation inspired by documented historical events. Some gameplay mechanics are abstractions created for educational and interactive purposes.</footer>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   KOMANDAN 1948 — data model, map, combat, AI, events, UI, i18n (EN/ID)
+   ========================================================================= */
+
+/* ============================================================
+   I18N DICTIONARIES
+   ============================================================ */
+var LANG = 'EN';
+
+var I18N = {
+EN: {
+  title:{
+    stamp:'19 DECEMBER 1948', h1:'YOGYAKARTA', h2:'19 December 1948',
+    lead1:'The capital has fallen.', lead2:'Soekarno and Hatta have been captured.',
+    lead3:'<strong>Does the Republic fall with them?</strong>',
+    btnCommand:'TAKE COMMAND', btnDemo:'PLAY DEMO (5 MIN)', btnContext:'HISTORICAL CONTEXT'
+  },
+  tutorial:{
+    title:'Field Manual',
+    intro:'You command the forces of the Republic. You do not control a single soldier — you issue orders to units on the strategic map.',
+    step1:'Click a unit marker on the map to select it and open the Command Panel.',
+    step2:'Choose <strong>MOVE</strong>, then click a connected location to march there.',
+    step3:'Use <strong>HIDE</strong> in forests, villages, or hills to conceal a unit from the Dutch.',
+    step4:'Use <strong>SCOUT</strong> to reveal nearby enemy forces and gather intelligence.',
+    step5:'Terrain matters — forests and hills favor guerrilla forces; roads and cities favor the Dutch.',
+    step6:'Attacking a stronger enemy in the open is dangerous. Withdraw instead of fighting a battle you cannot win.',
+    step7:'When ready, click <strong>END TURN</strong>. The Dutch will then move.',
+    btnClose:'UNDERSTOOD, COMMANDER'
+  },
+  context:{
+    title:'Historical Context',
+    intro:'This panel separates documented history from gameplay abstraction. <span class="tag-fact">FACT</span> marks documented history. <span class="tag-game">GAMEPLAY</span> marks an interpretation made for playability.',
+    h1:'What Happened?',
+    p1:'<span class="tag-fact">FACT</span> On 19 December 1948, Dutch forces launched the second "Police Action" (Agresi Militer Belanda II), attacking Yogyakarta — then the capital of the Republic of Indonesia. Maguwo airfield and the city center were seized, and President Soekarno, Vice President Hatta, and other Republican leaders were captured and later exiled.',
+    p2:'<span class="tag-fact">FACT</span> Despite the capture of its political leadership, the Republic\'s military did not surrender. Forces under General Soedirman, who was seriously ill with tuberculosis, withdrew from the city and continued organized resistance from the countryside.',
+    h2:'Why Did the Guerrilla War Matter?',
+    p3:'<span class="tag-fact">FACT</span> Indonesian forces relied on mobility, concealment, decentralized command, and support from villages to keep resisting a materially stronger Dutch army. This demonstrated that the Republic still existed as a functioning state and armed force, even without its captured capital.',
+    p4:'<span class="tag-game">GAMEPLAY</span> The specific unit stats, terrain bonuses, hiding mechanics, and detection rolls in this game are simplified abstractions designed to teach the logic of guerrilla warfare, not a simulation of any single documented battle.',
+    h3:'Who Was General Soedirman?',
+    p5:'<span class="tag-fact">FACT</span> General Soedirman was the first commander-in-chief of the Indonesian armed forces. Though gravely ill, he left Yogyakarta and led guerrilla operations from the field, becoming a lasting symbol of resistance and national resolve.',
+    h4:'What Was the 1 March 1949 General Offensive?',
+    p6:'<span class="tag-fact">FACT</span> On 1 March 1949, Indonesian forces carried out a coordinated attack on Yogyakarta, briefly retaking parts of the city — including areas around Fort Vredeburg — before withdrawing. The operation showed that the Republic and the TNI (Indonesian National Armed Forces) remained active and organized.',
+    p7:'<span class="tag-game">GAMEPLAY</span> The "approach routes," offensive-readiness checklist, and sector-capture mechanics in this game are simplified for playability. They are not a precise recreation of the historical unit movements.',
+    h5:'Why Did It Matter Internationally?',
+    p8:'<span class="tag-fact">FACT</span> News of continued Indonesian resistance strengthened the Republic\'s diplomatic position at the United Nations and undercut Dutch claims that the Republic had been eliminated, contributing to the pressure that eventually led toward negotiations and the transfer of sovereignty later in 1949.',
+    h6:'Sources',
+    sources:'Museum Benteng Vredeburg, Yogyakarta — official history (vredeburg.id) · Dinas Kebudayaan Kota Yogyakarta (kebudayaan.jogjakota.go.id) · Indonesian national historical archives and museum records on Agresi Militer Belanda II and Serangan Umum 1 Maret 1949.',
+    btnClose:'CLOSE'
+  },
+  ui:{
+    date:'Date', turn:'Turn', phase:'Phase', morale:'Morale', intel:'Intel',
+    btnManual:'FIELD MANUAL', btnEndTurn:'END TURN',
+    objective:'Objective', summaryTitle:'Command Log Summary', forcesTitle:'Forces (Indonesia)',
+    offensiveTitle:'General Offensive', offensiveHint:'Assign combat units to approach routes, then launch when ready.',
+    btnLaunch:'LAUNCH GENERAL OFFENSIVE', unitPanelTitle:'Unit / Command',
+    selectUnitHint:'Select a unit on the map to issue orders.', ordersTitle:'Orders',
+    concealed:'CONCEALED', noForces:'No forces remain.',
+    unitsAssigned:'Units assigned', routesUsed:'Routes used', assignHint:'Select a unit, then use its command panel to assign a route.',
+    approachRoute:'Approach Route',
+    disclaimer:'This game is a strategic interpretation inspired by documented historical events. Some gameplay mechanics are abstractions created for educational and interactive purposes.',
+    summary:function(p){ return p.units+' unit(s) active · Avg. morale '+p.morale+' · Intel '+p.intel; }
+  },
+  cmd:{ MOVE:'MOVE', ATTACK:'ATTACK', RETREAT:'RETREAT', DEFEND:'DEFEND', HIDE:'HIDE', SCOUT:'SCOUT', REGROUP:'REGROUP', WAIT:'WAIT' },
+  stat:{ Strength:'Strength', Morale:'Morale', Supply:'Supply', Fatigue:'Fatigue' },
+  route:{ NORTH:'NORTH', WEST:'WEST', SOUTHEAST:'SOUTHEAST' },
+  banner:{ move:'Select a connected location to move to.', attack:'Select an adjacent location to attack.' },
+  unitType:{
+    INFANTRY:'Infantry', GUERRILLA:'Guerrilla Unit', COMMAND:'Command Unit', LOCAL_SUPPORT:'Local Support',
+    DUTCH_INFANTRY:'Dutch Infantry', DUTCH_MOBILE:'Dutch Mobile Force', DUTCH_GARRISON:'Dutch Garrison', DUTCH_PATROL:'Dutch Patrol'
+  },
+  terrain:{ CITY:'the city', VILLAGE:'the village', FOREST:'the forest', HILLS:'the hills', ROAD:'the open road', OPEN_FIELD:'open ground' },
+  locName:{
+    YOGYA:'Yogyakarta', MAGUWO:'Maguwo Airfield', KOTAGEDE:'Kotagede', BANTUL:'Bantul', SLEMAN:'Sleman',
+    GODEAN:'Godean', KALASAN:'Kalasan', PRAMBANAN:'Prambanan', PAKEM:'Pakem', KALIURANG:'Kaliurang',
+    MENOREH:'Menoreh Hills', IMOGIRI:'Imogiri', WONOSARI:'Wonosari'
+  },
+  unitName:{
+    batalyon_yogya:'TNI Yogyakarta Battalion',
+    kompi_gerilya_wk3:'Wehrkreise III Guerrilla Company',
+    markas_panglima:"Commander-in-Chief's Field Headquarters",
+    dukungan_bantul:"Bantul People's Support",
+    inf_belanda:'Dutch Infantry Battalion',
+    gerak_cepat_belanda:'Dutch Rapid Mobile Force',
+    patroli_belanda:'Dutch Patrol',
+    garnisun_yogya:'Dutch Garrison of Yogyakarta',
+    sukarelawan:function(p){ return "People's Volunteers "+p.n; }
+  },
+  outcome:{ decisive:'decisive victory', victory:'victory', costly:'costly setback', disaster:'disaster' },
+  dutchResult:{ advance:'Dutch forces advance', repelled:'Dutch forces are repelled', hold:'Indonesian forces hold' },
+  phase:{
+    PHASE1:{ name:'THE FALL OF YOGYAKARTA', objective:'Preserve your forces. Leave Yogyakarta before the Dutch consolidate control.' },
+    PHASE2:{ name:'THE LONG RETREAT', objective:'Move surviving forces toward the countryside — Kaliurang, Menoreh, or Wonosari. Avoid Dutch patrols on the roads.' },
+    PHASE3:{ name:'THE GUERRILLA WAR', objective:'Scout, hide, and strike selectively. Build strength, morale, and intelligence until you can prepare a general offensive.' },
+    PHASE4_ready:{ name:'PREPARE THE OFFENSIVE', objective:'Assign units to NORTH / WEST / SOUTHEAST approach routes, then launch the General Offensive on Yogyakarta.' },
+    PHASE4_deadline:{ name:'PREPARE THE OFFENSIVE', objective:'1 March 1949 has arrived. Assign units to approach routes and launch the offensive now.' },
+    demo:{ objective:'Demo: build final strength, then prepare and launch the General Offensive.' }
+  },
+  log:{
+    invasion1:function(){ return 'DUTCH FORCES LAUNCH A SURPRISE ASSAULT ON YOGYAKARTA.'; },
+    invasion2:function(){ return 'MAGUWO AIRFIELD AND GOVERNMENT BUILDINGS ARE UNDER ATTACK.'; },
+    demoStart:function(){ return 'DEMO MODE — the guerrilla campaign is already underway. Build strength and launch the offensive.'; },
+    defend:function(p){ return p.unit+' takes up defensive positions.'; },
+    retreatFail:function(p){ return p.unit+' has nowhere safe to retreat.'; },
+    retreat:function(p){ return p.unit+' withdraws to '+p.loc+'.'; },
+    hideGood:function(p){ return p.unit+' conceals itself and rests.'; },
+    hideBad:function(p){ return p.unit+' tries to hide, but '+p.terrain+' offers little cover.'; },
+    scoutSpotted:function(p){ return 'SCOUT REPORT: '+p.n+' Dutch force(s) detected near '+p.loc+'.'; },
+    scoutClear:function(p){ return 'SCOUT REPORT: area around '+p.loc+' appears clear.'; },
+    regroup:function(p){ return p.unit+' regroups and recovers strength.'+(p.support?' Local villagers provide support.':''); },
+    wait:function(p){ return p.unit+' holds position.'; },
+    move:function(p){ return p.unit+' moves to '+p.loc+'.'; },
+    moveNotConnected:function(){ return 'That location is not directly connected.'; },
+    moveEnemyBlocked:function(p){ return p.loc+' is held by Dutch forces — attack it or choose another route.'; },
+    attackOutOfRange:function(){ return 'Target is out of range.'; },
+    attackNoEnemy:function(){ return 'No enemy force at that location.'; },
+    attackResult:function(p){ return p.unit+' attacks '+p.defender+' at '+p.loc+': '+p.outcome.toUpperCase()+'.'; },
+    dutchAttack:function(p){ return 'DUTCH FORCES ATTACK: '+p.dutch+' engages '+p.target+' at '+p.loc+': '+p.result+'.'; },
+    dutchAdvance:function(p){ return 'A Dutch '+p.type+' advances toward '+p.loc+'.'; },
+    dutchStumble:function(p){ return 'A Dutch patrol stumbles into '+p.name+' near '+p.loc+': '+p.result+'.'; },
+    dutchOccupy:function(p){ return 'Dutch forces occupy '+p.loc+'.'; },
+    yogyaFalls:function(){ return 'YOGYAKARTA HAS FALLEN.'; },
+    leadersCaptured:function(){ return 'PRESIDENT SOEKARNO AND VICE PRESIDENT HATTA HAVE BEEN CAPTURED.'; },
+    overrunWarning:function(){ return 'Forces still inside the city were caught in the assault and suffered heavy losses.'; },
+    soedirmanLeaves:function(){ return 'GENERAL SOEDIRMAN LEAVES YOGYAKARTA TO LEAD THE RESISTANCE FROM THE FIELD.'; },
+    guerrillaBegins:function(){ return 'THE GUERRILLA CAMPAIGN BEGINS.'; },
+    reinforcements:function(){ return 'LOCAL VOLUNTEERS HAVE JOINED THE RESISTANCE.'; },
+    offensiveReady:function(){ return 'SUFFICIENT STRENGTH HAS BEEN GATHERED. PREPARE THE GENERAL OFFENSIVE.'; },
+    deadlineForced:function(){ return '1 MARCH 1949 — TIME HAS RUN OUT. THE OFFENSIVE MUST BEGIN NOW.'; },
+    offensiveBegins:function(){ return '1 MARCH 1949 — THE GENERAL OFFENSIVE BEGINS.'; },
+    offensiveBreakthrough:function(){ return 'INDONESIAN FORCES PENETRATE YOGYAKARTA FROM MULTIPLE DIRECTIONS.'; }
+  },
+  ending:{
+    stampOff:'1 MARCH 1949',
+    victoryH1:'YOGYAKARTA HAS BEEN REACHED',
+    victoryL1:'"You did not win by destroying the enemy."',
+    victoryL2:'"You won by keeping the Republic alive."',
+    victoryL3:'The world could see that Indonesia was still fighting.',
+    partialH1:'A MESSAGE WAS SENT',
+    partialL1:'The offensive was only partly coordinated, but Indonesian forces still reached the city.',
+    partialL2:'It was enough to prove the Republic had not disappeared.',
+    defeatH1:'THE OFFENSIVE FALTERED',
+    defeatL1:'Your command failed to prepare sufficient strength, morale, intelligence, or coordination.',
+    defeatNote:'<strong>HISTORICAL NOTE:</strong> the Indonesian resistance continued through other forces and regions, and the real Serangan Umum went ahead regardless of any single commander\'s choices.',
+    scoreLabel:'Commander Score',
+    statsLine:function(p){ return 'Routes used: '+p.routes+'/3 &nbsp;•&nbsp; Assigned strength: '+p.strength+' &nbsp;•&nbsp; Avg. morale: '+p.morale+' &nbsp;•&nbsp; Intelligence: '+p.intel; },
+    stampFail:'COMMAND FAILED',
+    failH1:'THE FORCES COULD NOT BE PRESERVED',
+    failNote:'<strong>HISTORICAL NOTE:</strong> the Indonesian resistance continued through other forces and regions. One commander\'s failure does not represent the actual outcome of history.',
+    simpleMsg:'Your command failed to preserve sufficient forces in the field.',
+    btnAgain:'PLAY AGAIN', btnContext:'HISTORICAL CONTEXT'
+  }
+},
+
+ID: {
+  title:{
+    stamp:'19 DESEMBER 1948', h1:'YOGYAKARTA', h2:'19 Desember 1948',
+    lead1:'Ibu kota telah jatuh.', lead2:'Soekarno dan Hatta telah ditangkap.',
+    lead3:'<strong>Apakah Republik ikut jatuh bersama mereka?</strong>',
+    btnCommand:'AMBIL ALIH KOMANDO', btnDemo:'MAINKAN DEMO (5 MENIT)', btnContext:'KONTEKS SEJARAH'
+  },
+  tutorial:{
+    title:'Buku Panduan Lapangan',
+    intro:'Kamu memimpin pasukan Republik. Kamu tidak mengendalikan satu prajurit — kamu memberi perintah kepada unit-unit di peta strategis.',
+    step1:'Klik penanda unit di peta untuk memilihnya dan membuka Panel Komando.',
+    step2:'Pilih <strong>PINDAH</strong>, lalu klik lokasi yang terhubung untuk bergerak ke sana.',
+    step3:'Gunakan <strong>SEMBUNYI</strong> di hutan, desa, atau perbukitan untuk menyembunyikan unit dari Belanda.',
+    step4:'Gunakan <strong>INTAI</strong> untuk mengungkap pasukan musuh terdekat dan mengumpulkan intelijen.',
+    step5:'Medan sangat berpengaruh — hutan dan perbukitan menguntungkan pasukan gerilya; jalan raya dan kota menguntungkan Belanda.',
+    step6:'Menyerang musuh yang lebih kuat di lapangan terbuka sangat berbahaya. Mundurlah daripada bertempur dalam pertempuran yang tak bisa dimenangkan.',
+    step7:'Jika sudah siap, klik <strong>AKHIRI GILIRAN</strong>. Setelah itu giliran Belanda bergerak.',
+    btnClose:'SIAP, KOMANDAN'
+  },
+  context:{
+    title:'Konteks Sejarah',
+    intro:'Panel ini memisahkan sejarah yang terdokumentasi dari abstraksi permainan. <span class="tag-fact">FAKTA</span> menandai sejarah yang terdokumentasi. <span class="tag-game">GAMEPLAY</span> menandai interpretasi yang dibuat demi kelancaran permainan.',
+    h1:'Apa yang Terjadi?',
+    p1:'<span class="tag-fact">FAKTA</span> Pada 19 Desember 1948, pasukan Belanda melancarkan Aksi Polisionil kedua (Agresi Militer Belanda II), menyerang Yogyakarta — yang saat itu menjadi ibu kota Republik Indonesia. Lapangan terbang Maguwo dan pusat kota berhasil dikuasai, dan Presiden Soekarno, Wakil Presiden Hatta, serta sejumlah pemimpin Republik lainnya ditangkap dan kemudian diasingkan.',
+    p2:'<span class="tag-fact">FAKTA</span> Meski pemimpin politiknya ditangkap, militer Republik tidak menyerah. Pasukan di bawah Jenderal Soedirman, yang saat itu menderita sakit paru-paru berat, mundur dari kota dan terus melakukan perlawanan terorganisir dari pedesaan.',
+    h2:'Mengapa Perang Gerilya Penting?',
+    p3:'<span class="tag-fact">FAKTA</span> Pasukan Indonesia mengandalkan mobilitas, penyamaran, komando yang terdesentralisasi, dan dukungan dari desa-desa untuk terus melawan pasukan Belanda yang jauh lebih kuat secara materi. Hal ini membuktikan bahwa Republik masih ada sebagai negara dan kekuatan bersenjata yang berfungsi, meski ibu kotanya telah direbut.',
+    p4:'<span class="tag-game">GAMEPLAY</span> Statistik unit, bonus medan, mekanisme bersembunyi, dan peluang deteksi dalam permainan ini adalah abstraksi yang disederhanakan untuk mengajarkan logika perang gerilya, bukan simulasi dari satu pertempuran historis tertentu.',
+    h3:'Siapakah Jenderal Soedirman?',
+    p5:'<span class="tag-fact">FAKTA</span> Jenderal Soedirman adalah panglima besar pertama angkatan bersenjata Indonesia. Meski sakit parah, ia meninggalkan Yogyakarta dan memimpin operasi gerilya langsung dari medan, menjadi simbol abadi perlawanan dan tekad bangsa.',
+    h4:'Apa itu Serangan Umum 1 Maret 1949?',
+    p6:'<span class="tag-fact">FAKTA</span> Pada 1 Maret 1949, pasukan Indonesia melancarkan serangan terkoordinasi ke Yogyakarta, sempat merebut kembali sebagian kota — termasuk kawasan sekitar Benteng Vredeburg — sebelum kemudian mundur. Operasi ini membuktikan bahwa Republik dan TNI (Tentara Nasional Indonesia) masih aktif dan terorganisir.',
+    p7:'<span class="tag-game">GAMEPLAY</span> "Jalur serangan", daftar syarat kesiapan serangan, dan mekanisme perebutan sektor dalam permainan ini disederhanakan demi kelancaran bermain. Ini bukan rekonstruksi presisi dari pergerakan pasukan yang sebenarnya.',
+    h5:'Mengapa Ini Penting di Kancah Internasional?',
+    p8:'<span class="tag-fact">FAKTA</span> Kabar perlawanan Indonesia yang terus berlanjut memperkuat posisi diplomatik Republik di Perserikatan Bangsa-Bangsa dan mematahkan klaim Belanda bahwa Republik telah dihancurkan, turut menekan jalan menuju perundingan dan penyerahan kedaulatan pada akhir 1949.',
+    h6:'Sumber',
+    sources:'Museum Benteng Vredeburg, Yogyakarta — sejarah resmi (vredeburg.id) · Dinas Kebudayaan Kota Yogyakarta (kebudayaan.jogjakota.go.id) · Arsip sejarah nasional dan catatan museum Indonesia mengenai Agresi Militer Belanda II dan Serangan Umum 1 Maret 1949.',
+    btnClose:'TUTUP'
+  },
+  ui:{
+    date:'Tanggal', turn:'Giliran', phase:'Fase', morale:'Moral', intel:'Intelijen',
+    btnManual:'BUKU PANDUAN', btnEndTurn:'AKHIRI GILIRAN',
+    objective:'Sasaran', summaryTitle:'Ringkasan Log Komando', forcesTitle:'Pasukan (Indonesia)',
+    offensiveTitle:'Serangan Umum', offensiveHint:'Tetapkan unit tempur ke jalur serangan, lalu luncurkan bila sudah siap.',
+    btnLaunch:'LUNCURKAN SERANGAN UMUM', unitPanelTitle:'Unit / Komando',
+    selectUnitHint:'Pilih unit di peta untuk memberi perintah.', ordersTitle:'Perintah',
+    concealed:'TERSEMBUNYI', noForces:'Tidak ada pasukan tersisa.',
+    unitsAssigned:'Unit ditugaskan', routesUsed:'Jalur digunakan', assignHint:'Pilih unit, lalu gunakan panel komandonya untuk menetapkan jalur.',
+    approachRoute:'Jalur Serangan',
+    disclaimer:'Permainan ini adalah interpretasi strategis yang terinspirasi dari peristiwa sejarah yang terdokumentasi. Sejumlah mekanisme permainan adalah abstraksi yang dibuat untuk tujuan edukasi dan interaktif.',
+    summary:function(p){ return p.units+' unit aktif · Moral rata-rata '+p.morale+' · Intelijen '+p.intel; }
+  },
+  cmd:{ MOVE:'PINDAH', ATTACK:'SERANG', RETREAT:'MUNDUR', DEFEND:'BERTAHAN', HIDE:'SEMBUNYI', SCOUT:'INTAI', REGROUP:'KUMPUL', WAIT:'TUNGGU' },
+  stat:{ Strength:'Kekuatan', Morale:'Moral', Supply:'Perbekalan', Fatigue:'Kelelahan' },
+  route:{ NORTH:'UTARA', WEST:'BARAT', SOUTHEAST:'TENGGARA' },
+  banner:{ move:'Pilih lokasi terhubung untuk dituju.', attack:'Pilih lokasi berdekatan untuk diserang.' },
+  unitType:{
+    INFANTRY:'Infanteri', GUERRILLA:'Pasukan Gerilya', COMMAND:'Markas Komando', LOCAL_SUPPORT:'Dukungan Rakyat',
+    DUTCH_INFANTRY:'Infanteri Belanda', DUTCH_MOBILE:'Pasukan Gerak Cepat Belanda', DUTCH_GARRISON:'Garnisun Belanda', DUTCH_PATROL:'Patroli Belanda'
+  },
+  terrain:{ CITY:'kota', VILLAGE:'desa', FOREST:'hutan', HILLS:'perbukitan', ROAD:'jalan terbuka', OPEN_FIELD:'tanah lapang' },
+  locName:{
+    YOGYA:'Yogyakarta', MAGUWO:'Lapangan Terbang Maguwo', KOTAGEDE:'Kotagede', BANTUL:'Bantul', SLEMAN:'Sleman',
+    GODEAN:'Godean', KALASAN:'Kalasan', PRAMBANAN:'Prambanan', PAKEM:'Pakem', KALIURANG:'Kaliurang',
+    MENOREH:'Pegunungan Menoreh', IMOGIRI:'Imogiri', WONOSARI:'Wonosari'
+  },
+  unitName:{
+    batalyon_yogya:'Batalyon TNI Yogyakarta',
+    kompi_gerilya_wk3:'Kompi Gerilya Wehrkreise III',
+    markas_panglima:'Markas Panglima Besar',
+    dukungan_bantul:'Dukungan Rakyat Bantul',
+    inf_belanda:'Batalyon Infanteri Belanda',
+    gerak_cepat_belanda:'Pasukan Gerak Cepat Belanda',
+    patroli_belanda:'Patroli Belanda',
+    garnisun_yogya:'Garnisun Belanda Yogyakarta',
+    sukarelawan:function(p){ return 'Sukarelawan Rakyat '+p.n; }
+  },
+  outcome:{ decisive:'kemenangan telak', victory:'kemenangan', costly:'kemunduran yang merugikan', disaster:'bencana' },
+  dutchResult:{ advance:'Pasukan Belanda maju', repelled:'Pasukan Belanda berhasil dipukul mundur', hold:'Pasukan Indonesia bertahan' },
+  phase:{
+    PHASE1:{ name:'JATUHNYA YOGYAKARTA', objective:'Pertahankan pasukanmu. Tinggalkan Yogyakarta sebelum Belanda menguasai penuh kota.' },
+    PHASE2:{ name:'MUNDUR PANJANG', objective:'Gerakkan pasukan yang tersisa menuju pedesaan — Kaliurang, Menoreh, atau Wonosari. Hindari patroli Belanda di jalan raya.' },
+    PHASE3:{ name:'PERANG GERILYA', objective:'Intai, bersembunyi, dan serang secara selektif. Bangun kekuatan, moral, dan intelijen hingga siap menyiapkan serangan umum.' },
+    PHASE4_ready:{ name:'PERSIAPAN SERANGAN UMUM', objective:'Tetapkan unit ke jalur UTARA / BARAT / TENGGARA, lalu luncurkan Serangan Umum ke Yogyakarta.' },
+    PHASE4_deadline:{ name:'PERSIAPAN SERANGAN UMUM', objective:'1 Maret 1949 telah tiba. Tetapkan unit ke jalur serangan dan luncurkan serangan sekarang.' },
+    demo:{ objective:'Demo: bangun kekuatan akhir, lalu siapkan dan luncurkan Serangan Umum.' }
+  },
+  log:{
+    invasion1:function(){ return 'PASUKAN BELANDA MELANCARKAN SERANGAN MENDADAK KE YOGYAKARTA.'; },
+    invasion2:function(){ return 'LAPANGAN TERBANG MAGUWO DAN GEDUNG PEMERINTAHAN DISERANG.'; },
+    demoStart:function(){ return 'MODE DEMO — kampanye gerilya sudah berjalan. Bangun kekuatan dan luncurkan serangan umum.'; },
+    defend:function(p){ return p.unit+' mengambil posisi bertahan.'; },
+    retreatFail:function(p){ return p.unit+' tidak memiliki tempat aman untuk mundur.'; },
+    retreat:function(p){ return p.unit+' mundur ke '+p.loc+'.'; },
+    hideGood:function(p){ return p.unit+' bersembunyi dan beristirahat.'; },
+    hideBad:function(p){ return p.unit+' mencoba bersembunyi, tapi '+p.terrain+' tidak memberi banyak perlindungan.'; },
+    scoutSpotted:function(p){ return 'LAPORAN INTAI: '+p.n+' pasukan Belanda terdeteksi dekat '+p.loc+'.'; },
+    scoutClear:function(p){ return 'LAPORAN INTAI: area sekitar '+p.loc+' tampak aman.'; },
+    regroup:function(p){ return p.unit+' berkumpul kembali dan memulihkan kekuatan.'+(p.support?' Warga desa memberikan dukungan.':''); },
+    wait:function(p){ return p.unit+' bertahan di posisi.'; },
+    move:function(p){ return p.unit+' bergerak menuju '+p.loc+'.'; },
+    moveNotConnected:function(){ return 'Lokasi itu tidak terhubung langsung.'; },
+    moveEnemyBlocked:function(p){ return p.loc+' dikuasai pasukan Belanda — serang atau pilih jalur lain.'; },
+    attackOutOfRange:function(){ return 'Target di luar jangkauan.'; },
+    attackNoEnemy:function(){ return 'Tidak ada pasukan musuh di lokasi itu.'; },
+    attackResult:function(p){ return p.unit+' menyerang '+p.defender+' di '+p.loc+': '+p.outcome.toUpperCase()+'.'; },
+    dutchAttack:function(p){ return 'PASUKAN BELANDA MENYERANG: '+p.dutch+' menyerang '+p.target+' di '+p.loc+': '+p.result+'.'; },
+    dutchAdvance:function(p){ return p.type+' Belanda maju menuju '+p.loc+'.'; },
+    dutchStumble:function(p){ return 'Patroli Belanda tak sengaja bertemu '+p.name+' dekat '+p.loc+': '+p.result+'.'; },
+    dutchOccupy:function(p){ return 'Pasukan Belanda menduduki '+p.loc+'.'; },
+    yogyaFalls:function(){ return 'YOGYAKARTA TELAH JATUH.'; },
+    leadersCaptured:function(){ return 'PRESIDEN SOEKARNO DAN WAKIL PRESIDEN HATTA TELAH DITANGKAP.'; },
+    overrunWarning:function(){ return 'Pasukan yang masih berada di dalam kota tertangkap dalam serangan dan menderita kerugian besar.'; },
+    soedirmanLeaves:function(){ return 'JENDERAL SOEDIRMAN MENINGGALKAN YOGYAKARTA UNTUK MEMIMPIN PERLAWANAN DARI MEDAN.'; },
+    guerrillaBegins:function(){ return 'KAMPANYE GERILYA DIMULAI.'; },
+    reinforcements:function(){ return 'SUKARELAWAN RAKYAT BERGABUNG DENGAN PERLAWANAN.'; },
+    offensiveReady:function(){ return 'KEKUATAN YANG CUKUP TELAH TERKUMPUL. SIAPKAN SERANGAN UMUM.'; },
+    deadlineForced:function(){ return '1 MARET 1949 — WAKTU HABIS. SERANGAN UMUM HARUS DIMULAI SEKARANG.'; },
+    offensiveBegins:function(){ return '1 MARET 1949 — SERANGAN UMUM DIMULAI.'; },
+    offensiveBreakthrough:function(){ return 'PASUKAN INDONESIA MENEROBOS YOGYAKARTA DARI BERBAGAI ARAH.'; }
+  },
+  ending:{
+    stampOff:'1 MARET 1949',
+    victoryH1:'YOGYAKARTA BERHASIL DICAPAI',
+    victoryL1:'"Kamu tidak menang dengan menghancurkan musuh."',
+    victoryL2:'"Kamu menang dengan menjaga Republik tetap hidup."',
+    victoryL3:'Dunia bisa melihat bahwa Indonesia masih berjuang.',
+    partialH1:'SEBUAH PESAN TELAH TERKIRIM',
+    partialL1:'Serangan umum hanya sebagian terkoordinasi, namun pasukan Indonesia tetap berhasil mencapai kota.',
+    partialL2:'Itu cukup untuk membuktikan bahwa Republik belum lenyap.',
+    defeatH1:'SERANGAN UMUM GAGAL TERLAKSANA',
+    defeatL1:'Komandomu gagal mempersiapkan kekuatan, moral, intelijen, atau koordinasi yang cukup.',
+    defeatNote:'<strong>CATATAN SEJARAH:</strong> perlawanan Indonesia tetap berlanjut melalui pasukan dan wilayah lain, dan Serangan Umum yang sebenarnya tetap berjalan terlepas dari pilihan satu komandan.',
+    scoreLabel:'Skor Komandan',
+    statsLine:function(p){ return 'Jalur digunakan: '+p.routes+'/3 &nbsp;•&nbsp; Kekuatan yang ditugaskan: '+p.strength+' &nbsp;•&nbsp; Moral rata-rata: '+p.morale+' &nbsp;•&nbsp; Intelijen: '+p.intel; },
+    stampFail:'KOMANDO GAGAL',
+    failH1:'PASUKAN TIDAK BERHASIL DIPERTAHANKAN',
+    failNote:'<strong>CATATAN SEJARAH:</strong> perlawanan Indonesia tetap berlanjut melalui pasukan dan wilayah lain. Kegagalan satu komandan tidak mencerminkan hasil sejarah yang sebenarnya.',
+    simpleMsg:'Komandomu gagal mempertahankan cukup pasukan di medan.',
+    btnAgain:'MAIN LAGI', btnContext:'KONTEKS SEJARAH'
+  }
+}
+};
+
+function t(path, params){
+  var parts = path.split('.');
+  var node = I18N[LANG];
+  for(var i=0;i<parts.length;i++){ node = node ? node[parts[i]] : undefined; }
+  if(typeof node === 'function') return node(params||{});
+  return node===undefined ? path : node;
+}
+
+function applyStaticI18n(){
+  document.querySelectorAll('[data-i18n]').forEach(function(el){
+    var key = el.getAttribute('data-i18n');
+    el.innerHTML = t(key);
+  });
+  document.getElementById('lang-btn-EN').classList.toggle('active', LANG==='EN');
+  document.getElementById('lang-btn-ID').classList.toggle('active', LANG==='ID');
+  document.documentElement.lang = LANG==='ID' ? 'id' : 'en';
+}
+
+function setLang(lang){
+  LANG = lang;
+  applyStaticI18n();
+  if(S){
+    render();
+    if(S.gameOver) renderEndScreen();
+  }
+}
+
+/* ---------------------- LOCATIONS (map graph) ---------------------- */
+const LOCATIONS = [
+  {id:'YOGYA',     type:'CITY',     terrain:'CITY',       x:500, y:330, strategicValue:10, owner:'INDONESIA', edges:['MAGUWO','KOTAGEDE','BANTUL','SLEMAN','GODEAN','KALASAN']},
+  {id:'MAGUWO',    type:'AIRFIELD', terrain:'OPEN_FIELD', x:660, y:270, strategicValue:7,  owner:'INDONESIA', edges:['YOGYA','KALASAN']},
+  {id:'KOTAGEDE',  type:'VILLAGE',  terrain:'VILLAGE',    x:575, y:410, strategicValue:3,  owner:'INDONESIA', edges:['YOGYA','IMOGIRI']},
+  {id:'BANTUL',    type:'VILLAGE',  terrain:'VILLAGE',    x:460, y:475, strategicValue:3,  owner:'INDONESIA', edges:['YOGYA','IMOGIRI','GODEAN']},
+  {id:'SLEMAN',    type:'VILLAGE',  terrain:'VILLAGE',    x:485, y:190, strategicValue:3,  owner:'INDONESIA', edges:['YOGYA','PAKEM','GODEAN']},
+  {id:'GODEAN',    type:'VILLAGE',  terrain:'VILLAGE',    x:335, y:335, strategicValue:3,  owner:'INDONESIA', edges:['YOGYA','BANTUL','SLEMAN','MENOREH']},
+  {id:'KALASAN',   type:'VILLAGE',  terrain:'ROAD',       x:705, y:345, strategicValue:2,  owner:'INDONESIA', edges:['YOGYA','MAGUWO','PRAMBANAN']},
+  {id:'PRAMBANAN', type:'VILLAGE',  terrain:'ROAD',       x:815, y:390, strategicValue:2,  owner:'INDONESIA', edges:['KALASAN','WONOSARI']},
+  {id:'PAKEM',     type:'VILLAGE',  terrain:'VILLAGE',    x:480, y:105, strategicValue:2,  owner:'INDONESIA', edges:['SLEMAN','KALIURANG']},
+  {id:'KALIURANG', type:'BASE',     terrain:'FOREST',     x:490, y:35,  strategicValue:5,  owner:'INDONESIA', edges:['PAKEM'], route:'NORTH'},
+  {id:'MENOREH',   type:'BASE',     terrain:'FOREST',     x:190, y:305, strategicValue:5,  owner:'INDONESIA', edges:['GODEAN'], route:'WEST'},
+  {id:'IMOGIRI',   type:'HILLS',    terrain:'HILLS',      x:530, y:565, strategicValue:3,  owner:'INDONESIA', edges:['BANTUL','KOTAGEDE','WONOSARI']},
+  {id:'WONOSARI',  type:'BASE',     terrain:'HILLS',      x:800, y:510, strategicValue:5,  owner:'INDONESIA', edges:['PRAMBANAN','IMOGIRI'], route:'SOUTHEAST'},
+];
+const BASE_IDS = ['KALIURANG','MENOREH','WONOSARI'];
+
+const TERRAIN_MODS = {
+  CITY:       { INDONESIA:{attack:0.90, defense:1.10, stealth:0.8}, DUTCH:{attack:1.10, defense:1.55, stealth:0.8} },
+  VILLAGE:    { INDONESIA:{attack:1.00, defense:1.15, stealth:1.25}, DUTCH:{attack:0.90, defense:1.00, stealth:0.9} },
+  FOREST:     { INDONESIA:{attack:1.10, defense:1.35, stealth:1.55}, DUTCH:{attack:0.65, defense:0.80, stealth:0.55} },
+  HILLS:      { INDONESIA:{attack:1.05, defense:1.25, stealth:1.20}, DUTCH:{attack:0.85, defense:1.05, stealth:0.75} },
+  ROAD:       { INDONESIA:{attack:0.90, defense:0.85, stealth:0.70}, DUTCH:{attack:1.30, defense:1.05, stealth:0.85} },
+  OPEN_FIELD: { INDONESIA:{attack:0.75, defense:0.70, stealth:0.60}, DUTCH:{attack:1.15, defense:1.00, stealth:0.90} },
+};
+
+/* ---------------------- HISTORICAL DATE TRACK ---------------------- */
+const TURN_DATES_EN = [null,'19 Dec 1948','22 Dec 1948','29 Dec 1948','10 Jan 1949','25 Jan 1949','5 Feb 1949','14 Feb 1949','20 Feb 1949','25 Feb 1949','27 Feb 1949','28 Feb 1949','1 Mar 1949'];
+const TURN_DATES_ID = [null,'19 Des 1948','22 Des 1948','29 Des 1948','10 Jan 1949','25 Jan 1949','5 Feb 1949','14 Feb 1949','20 Feb 1949','25 Feb 1949','27 Feb 1949','28 Feb 1949','1 Mar 1949'];
+function dateForTurn(n){ return (LANG==='ID'?TURN_DATES_ID:TURN_DATES_EN)[n]; }
+const MAX_TURN = 12;
+
+/* ---------------------- UNIT TEMPLATES ---------------------- */
+function makeUnit(o){
+  return Object.assign({
+    strength:100, morale:70, supply:70, fatigue:0,
+    mobility:1, stealth:20, attack_power:50, defense_power:50, command_range:1,
+    hidden:false, status:'ACTIVE', defendBonus:false
+  }, o);
+}
+function unitName(u){
+  return t('unitName.'+u.nameKey, u.nameParams);
+}
+function locName(id){ return t('locName.'+id); }
+
+function initialUnits(){
+  return [
+    makeUnit({id:'ID1', nameKey:'batalyon_yogya', faction:'INDONESIA', type:'INFANTRY', location:'YOGYA',
+      strength:90, morale:65, supply:75, mobility:1, stealth:15, attack_power:55, defense_power:60}),
+    makeUnit({id:'ID2', nameKey:'kompi_gerilya_wk3', faction:'INDONESIA', type:'GUERRILLA', location:'KOTAGEDE',
+      strength:65, morale:75, supply:60, mobility:2, stealth:60, attack_power:42, defense_power:35}),
+    makeUnit({id:'ID3', nameKey:'markas_panglima', faction:'INDONESIA', type:'COMMAND', location:'YOGYA',
+      strength:30, morale:90, supply:55, mobility:1, stealth:30, attack_power:10, defense_power:22, command_range:1}),
+    makeUnit({id:'ID4', nameKey:'dukungan_bantul', faction:'INDONESIA', type:'LOCAL_SUPPORT', location:'BANTUL',
+      strength:40, morale:80, supply:100, mobility:1, stealth:50, attack_power:0, defense_power:10}),
+
+    makeUnit({id:'DU1', nameKey:'inf_belanda', faction:'DUTCH', type:'DUTCH_INFANTRY', location:'MAGUWO',
+      strength:100, morale:70, supply:90, mobility:1, stealth:10, attack_power:70, defense_power:65}),
+    makeUnit({id:'DU2', nameKey:'gerak_cepat_belanda', faction:'DUTCH', type:'DUTCH_MOBILE', location:'KALASAN',
+      strength:80, morale:65, supply:85, mobility:2, stealth:15, attack_power:65, defense_power:40}),
+    makeUnit({id:'DU3', nameKey:'patroli_belanda', faction:'DUTCH', type:'DUTCH_PATROL', location:'GODEAN',
+      strength:45, morale:60, supply:80, mobility:2, stealth:25, attack_power:42, defense_power:28}),
+  ];
+}
+
+/* ---------------------- GAME STATE ---------------------- */
+var S = null;
+
+function newGameState(demo){
+  const locs = LOCATIONS.map(l=>({...l}));
+  const st = {
+    turn:1, phase:'PHASE1', phase4Reason:null,
+    units: initialUnits(),
+    locations: locs,
+    log: [],
+    intelligence: 10,
+    reinforcementCount: 0,
+    selectedUnitId: null,
+    pendingAction: null,
+    offensiveUnlocked: false,
+    offensiveLaunched: false,
+    routeAssign: {},
+    gameOver: false,
+    outcome: null,
+    endInfo: null,
+    demo: !!demo,
+  };
+  return st;
+}
+
+function addLog(key, params, cls){
+  S.log.push({turn:S.turn, key, params: params||{}, cls: cls||'ev'});
+  if(S.log.length>200) S.log.shift();
+}
+
+function indonesianUnits(){ return S.units.filter(u=>u.faction==='INDONESIA' && u.status==='ACTIVE'); }
+function dutchUnits(){ return S.units.filter(u=>u.faction==='DUTCH' && u.status==='ACTIVE'); }
+function combatUnits(list){ return list.filter(u=>u.type!=='LOCAL_SUPPORT'); }
+function unitsAt(locId, faction){ return S.units.filter(u=>u.location===locId && u.status==='ACTIVE' && (!faction || u.faction===faction)); }
+function locById(id){ return S.locations.find(l=>l.id===id); }
+function unitById(id){ return S.units.find(u=>u.id===id); }
+
+function avgMorale(){
+  const u = combatUnits(indonesianUnits());
+  if(!u.length) return 0;
+  return Math.round(u.reduce((a,b)=>a+b.morale,0)/u.length);
+}
+function totalIndoStrength(){
+  return combatUnits(indonesianUnits()).reduce((a,b)=>a+b.strength,0);
+}
+
+/* ---------------------- PATHFINDING ---------------------- */
+function bfsPath(startId, targetId){
+  if(startId===targetId) return [startId];
+  const visited = {[startId]:true};
+  const queue = [[startId]];
+  while(queue.length){
+    const path = queue.shift();
+    const last = path[path.length-1];
+    const loc = locById(last);
+    for(const nb of loc.edges){
+      if(visited[nb]) continue;
+      visited[nb]=true;
+      const np = [...path, nb];
+      if(nb===targetId) return np;
+      queue.push(np);
+    }
+  }
+  return null;
+}
+
+/* ---------------------- COMBAT ---------------------- */
+function combatPower(unit, terrain, role){
+  const base = role==='attack' ? unit.attack_power : unit.defense_power;
+  const strengthFactor = unit.strength/100;
+  const moraleFactor = 0.5 + (unit.morale/200);
+  const fatiguePenalty = Math.max(0.5, 1 - unit.fatigue/200);
+  const mods = TERRAIN_MODS[terrain] ? TERRAIN_MODS[terrain][unit.faction] : {attack:1,defense:1};
+  const terrainMod = mods ? (mods[role]||1) : 1;
+  const bonus = (role==='defense' && unit.defendBonus) ? 1.25 : 1;
+  return base * strengthFactor * moraleFactor * fatiguePenalty * terrainMod * bonus;
+}
+
+function resolveCombat(attacker, defender){
+  const terrain = locById(defender.location).terrain;
+  const rand = ()=> 0.85 + Math.random()*0.30;
+  const atkScore = combatPower(attacker, terrain, 'attack') * rand();
+  const defScore = combatPower(defender, terrain, 'defense') * rand();
+  const ratio = atkScore/Math.max(1,defScore);
+
+  let atkLoss, defLoss, atkMorale, defMorale, outcomeKey;
+  if(ratio>=1.3){ atkLoss=5; defLoss=35; atkMorale=+2; defMorale=-15; outcomeKey='decisive'; }
+  else if(ratio>=1.0){ atkLoss=12; defLoss=20; atkMorale=0; defMorale=-10; outcomeKey='victory'; }
+  else if(ratio>=0.7){ atkLoss=25; defLoss=8; atkMorale=-15; defMorale=-2; outcomeKey='costly'; }
+  else { atkLoss=40; defLoss=3; atkMorale=-25; defMorale=0; outcomeKey='disaster'; }
+
+  attacker.strength = Math.max(0, attacker.strength-atkLoss);
+  defender.strength = Math.max(0, defender.strength-defLoss);
+  attacker.morale = clamp(attacker.morale+atkMorale,0,100);
+  defender.morale = clamp(defender.morale+defMorale,0,100);
+  attacker.fatigue = clamp(attacker.fatigue+20,0,100);
+  attacker.hidden = false; defender.hidden=false;
+  attacker.defendBonus=false;
+
+  if(defender.strength<=0){ defender.status='DESTROYED'; }
+  if(attacker.strength<=0){ attacker.status='DESTROYED'; }
+
+  const loc = locById(defender.location);
+  if(defender.status==='DESTROYED' && unitsAt(loc.id, defender.faction).length===0){
+    loc.owner = attacker.faction;
+  }
+  return {ratio, outcomeKey, atkLoss, defLoss};
+}
+
+function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
+
+/* ---------------------- COMMANDS ---------------------- */
+function selectUnit(id){
+  S.selectedUnitId = id;
+  S.pendingAction = null;
+  render();
+}
+function deselect(){ S.selectedUnitId=null; S.pendingAction=null; render(); }
+
+function issueCommand(cmd){
+  const u = unitById(S.selectedUnitId);
+  if(!u || u.status!=='ACTIVE') return;
+  if(cmd==='MOVE' || cmd==='ATTACK'){
+    S.pendingAction = cmd;
+    render();
+    return;
+  }
+  if(cmd==='RETREAT'){ doRetreat(u); }
+  else if(cmd==='DEFEND'){ u.defendBonus=true; addLog('defend',{unit:unitName(u)},'ev'); }
+  else if(cmd==='HIDE'){ doHide(u); }
+  else if(cmd==='SCOUT'){ doScout(u); }
+  else if(cmd==='REGROUP'){ doRegroup(u); }
+  else if(cmd==='WAIT'){ u.fatigue=clamp(u.fatigue-5,0,100); addLog('wait',{unit:unitName(u)},'ev'); }
+  S.pendingAction=null;
+  render();
+}
+
+function doRetreat(u){
+  const loc = locById(u.location);
+  const options = loc.edges.filter(id=>locById(id).owner!=='DUTCH');
+  if(options.length===0){ addLog('retreatFail',{unit:unitName(u)},'warn'); return; }
+  const dest = options[Math.floor(Math.random()*options.length)];
+  u.location = dest;
+  u.strength = Math.max(0,u.strength-5);
+  u.fatigue = clamp(u.fatigue+15,0,100);
+  u.hidden=false;
+  if(u.strength<=0) u.status='DESTROYED';
+  addLog('retreat',{unit:unitName(u), loc:locName(dest)},'ev');
+}
+
+function doHide(u){
+  const terrain = locById(u.location).terrain;
+  const good = terrain==='FOREST'||terrain==='VILLAGE'||terrain==='HILLS';
+  u.hidden = true;
+  u.strength = clamp(u.strength + (good?6:2), 0, 100);
+  u.morale = clamp(u.morale + (good?6:2), 0, 100);
+  if(good) addLog('hideGood',{unit:unitName(u)},'ev');
+  else addLog('hideBad',{unit:unitName(u), terrain:t('terrain.'+terrain)},'ev');
+}
+
+function doScout(u){
+  const loc = locById(u.location);
+  const reveal = [loc.id, ...loc.edges];
+  reveal.forEach(id=>{ locById(id).discoveredUntil = S.turn+2; });
+  S.intelligence = clamp(S.intelligence+7,0,100);
+  u.fatigue = clamp(u.fatigue+8,0,100);
+  const spotted = dutchUnits().filter(d=>reveal.includes(d.location));
+  if(spotted.length) addLog('scoutSpotted',{n:spotted.length, loc:locName(loc.id)},'warn');
+  else addLog('scoutClear',{loc:locName(loc.id)},'ev');
+}
+
+function doRegroup(u){
+  const support = unitsAt(u.location,'INDONESIA').concat(
+    locById(u.location).edges.flatMap(id=>unitsAt(id,'INDONESIA'))
+  ).some(o=>o.type==='LOCAL_SUPPORT');
+  const bonus = support ? 5 : 0;
+  u.strength = clamp(u.strength + 10 + bonus, 0, 100);
+  u.morale = clamp(u.morale + 10 + bonus, 0, 100);
+  u.fatigue = clamp(u.fatigue - 20, 0, 100);
+  addLog('regroup',{unit:unitName(u), support:support},'good');
+}
+
+function handleNodeClick(locId){
+  const u = unitById(S.selectedUnitId);
+  if(!u || !S.pendingAction) return;
+  const loc = locById(u.location);
+
+  if(S.pendingAction==='MOVE'){
+    if(!loc.edges.includes(locId)){ addLog('moveNotConnected',{},'warn'); return; }
+    const target = locById(locId);
+    const enemyHere = unitsAt(locId,'DUTCH').length>0;
+    if(enemyHere){ addLog('moveEnemyBlocked',{loc:locName(locId)},'warn'); return; }
+    u.location = locId;
+    u.hidden = false;
+    u.fatigue = clamp(u.fatigue + (target.terrain==='ROAD'?5:10), 0, 100);
+    addLog('move',{unit:unitName(u), loc:locName(locId)},'ev');
+    S.pendingAction=null;
+    render();
+    return;
+  }
+
+  if(S.pendingAction==='ATTACK'){
+    if(!loc.edges.includes(locId) && locId!==u.location){ addLog('attackOutOfRange',{},'warn'); return; }
+    const targets = unitsAt(locId,'DUTCH');
+    if(!targets.length){ addLog('attackNoEnemy',{},'warn'); return; }
+    const defender = targets.sort((a,b)=>b.strength-a.strength)[0];
+    const res = resolveCombat(u, defender);
+    addLog('attackResult',{unit:unitName(u), defender:unitName(defender), loc:locName(locId), outcome:t('outcome.'+res.outcomeKey)}, res.ratio>=1?'good':'warn');
+    S.pendingAction=null;
+    render();
+    return;
+  }
+}
+
+/* ---------------------- DUTCH AI ---------------------- */
+function detectionRoll(dutchUnit, targetUnit, terrain){
+  let chance = 0.45;
+  if(terrain==='ROAD'||terrain==='OPEN_FIELD') chance += 0.25;
+  if(terrain==='FOREST') chance -= 0.25;
+  if(terrain==='HILLS'||terrain==='VILLAGE') chance -= 0.12;
+  if(targetUnit.hidden) chance -= 0.30;
+  chance -= targetUnit.stealth/300;
+  return Math.random() < clamp(chance,0.05,0.92);
+}
+
+function dutchAITurn(){
+  dutchUnits().forEach(d=>{
+    if(d.type==='DUTCH_GARRISON'){ d.fatigue=clamp(d.fatigue-10,0,100); return; }
+
+    const loc = locById(d.location);
+    let target = null, targetDist = 99;
+    indonesianUnits().forEach(iu=>{
+      const path = bfsPath(d.location, iu.location);
+      if(!path) return;
+      const dist = path.length-1;
+      if(dist<=2 && dist<targetDist){
+        const terrain = locById(iu.location).terrain;
+        if(detectionRoll(d, iu, terrain)){ target = iu; targetDist = dist; }
+      }
+    });
+
+    if(target){
+      if(targetDist<=1){
+        const res = resolveCombat(d, target);
+        const resultKey = res.ratio>=1 ? 'advance' : 'repelled';
+        addLog('dutchAttack',{dutch:unitName(d), target:unitName(target), loc:locName(target.location), result:t('dutchResult.'+resultKey)}, res.ratio>=1?'warn':'good');
+      } else {
+        const path = bfsPath(d.location, target.location);
+        const next = path[1];
+        moveDutchUnit(d, next);
+        addLog('dutchAdvance',{type:t('unitType.'+d.type), loc:locName(target.location)},'warn');
+      }
+      return;
+    }
+
+    const candidates = loc.edges.filter(id=>locById(id).owner!=='DUTCH');
+    if(candidates.length){
+      candidates.sort((a,b)=>locById(b).strategicValue - locById(a).strategicValue);
+      const dest = candidates[0];
+      const indoHere = unitsAt(dest,'INDONESIA');
+      moveDutchUnit(d, dest);
+      if(indoHere.length){
+        const res = resolveCombat(d, indoHere[0]);
+        const resultKey = res.ratio>=1 ? 'advance' : 'hold';
+        addLog('dutchStumble',{name:unitName(indoHere[0]), loc:locName(dest), result:t('dutchResult.'+resultKey)}, res.ratio>=1?'warn':'good');
+      } else if(locById(dest).owner!=='DUTCH' && d.type!=='DUTCH_PATROL'){
+        locById(dest).owner='DUTCH';
+        addLog('dutchOccupy',{loc:locName(dest)},'warn');
+      }
+    } else {
+      d.fatigue = clamp(d.fatigue-8,0,100);
+    }
+  });
+}
+
+function moveDutchUnit(d, destId){
+  d.location = destId;
+  d.fatigue = clamp(d.fatigue+8,0,100);
+}
+
+/* ---------------------- END TURN / EVENTS ---------------------- */
+function endTurn(){
+  if(S.gameOver) return;
+
+  const cmd = S.units.find(u=>u.type==='COMMAND' && u.status==='ACTIVE');
+  if(cmd){
+    const near = indonesianUnits().filter(u=>u.id!==cmd.id && (u.location===cmd.location || locById(cmd.location).edges.includes(u.location)));
+    near.forEach(u=> u.morale = clamp(u.morale+5,0,100));
+  } else {
+    indonesianUnits().forEach(u=> u.morale = clamp(u.morale-20,0,100));
+  }
+
+  indonesianUnits().forEach(u=>{ u.supply = clamp(u.supply-8,0,100); if(u.supply<20) u.morale=clamp(u.morale-4,0,100); });
+
+  if(S.turn===1){
+    const overrun = unitsAt('YOGYA','INDONESIA').concat(unitsAt('MAGUWO','INDONESIA'));
+    overrun.forEach(u=>{
+      u.strength = Math.max(0, u.strength-50);
+      u.morale = clamp(u.morale-30,0,100);
+      if(u.strength<=0) u.status='DESTROYED';
+    });
+    locById('YOGYA').owner='DUTCH';
+    locById('MAGUWO').owner='DUTCH';
+    S.units.push(makeUnit({id:'DU_GARR', nameKey:'garnisun_yogya', faction:'DUTCH', type:'DUTCH_GARRISON',
+      location:'YOGYA', strength:95, morale:75, supply:90, mobility:1, stealth:5, attack_power:50, defense_power:85}));
+    addLog('yogyaFalls',{},'warn');
+    addLog('leadersCaptured',{},'warn');
+    if(overrun.length) addLog('overrunWarning',{},'warn');
+  }
+  if(S.turn===2){
+    S.phase='PHASE2';
+    addLog('soedirmanLeaves',{},'ev');
+  }
+
+  if(S.phase==='PHASE2'){
+    const atBase = indonesianUnits().some(u=>BASE_IDS.includes(u.location));
+    if(atBase || S.turn>=4){
+      S.phase='PHASE3';
+      addLog('guerrillaBegins',{},'good');
+    }
+  }
+
+  if(S.phase==='PHASE3' && S.turn%2===0 && S.reinforcementCount<3){
+    const presentBase = BASE_IDS.find(b=> unitsAt(b,'INDONESIA').length>0) || 'KALIURANG';
+    S.reinforcementCount++;
+    S.units.push(makeUnit({id:'ID_R'+S.reinforcementCount, nameKey:'sukarelawan', nameParams:{n:S.reinforcementCount},
+      faction:'INDONESIA', type:'GUERRILLA', location:presentBase, strength:55, morale:70, supply:60,
+      mobility:2, stealth:55, attack_power:38, defense_power:32}));
+    addLog('reinforcements',{},'good');
+  }
+
+  if(S.phase==='PHASE3'){
+    const basesHeld = BASE_IDS.filter(b=> unitsAt(b,'INDONESIA').length>0 || locById(b).owner==='INDONESIA').length;
+    if(S.turn>=6 && S.intelligence>=40 && avgMorale()>=40 && totalIndoStrength()>=140 && basesHeld>=2){
+      S.phase='PHASE4'; S.phase4Reason='ready';
+      S.offensiveUnlocked = true;
+      addLog('offensiveReady',{},'good');
+    }
+  }
+
+  if(S.turn>=MAX_TURN-1 && S.phase!=='PHASE4' && !S.offensiveLaunched){
+    S.phase='PHASE4'; S.phase4Reason='deadline';
+    S.offensiveUnlocked = true;
+    addLog('deadlineForced',{},'warn');
+  }
+
+  dutchAITurn();
+  checkDefeat();
+
+  if(!S.gameOver){
+    S.turn++;
+    if(S.turn>MAX_TURN){ S.turn=MAX_TURN; }
+    S.selectedUnitId=null; S.pendingAction=null;
+    indonesianUnits().forEach(u=>{ u.defendBonus=false; });
+  }
+
+  resetMapZoom();
+  render();
+}
+
+function checkDefeat(){
+  const combat = combatUnits(indonesianUnits());
+  if(combat.length===0 && !S.offensiveLaunched){
+    endGame(false, true);
+  }
+}
+
+/* ---------------------- GENERAL OFFENSIVE ---------------------- */
+function assignRoute(unitId, route){
+  if(S.routeAssign[unitId]===route) delete S.routeAssign[unitId];
+  else S.routeAssign[unitId]=route;
+  render();
+}
+
+function launchOffensive(){
+  if(S.offensiveLaunched || S.gameOver) return;
+  const assigned = Object.keys(S.routeAssign).map(unitById).filter(u=>u && u.status==='ACTIVE');
+  const routesUsed = [...new Set(assigned.map(u=>S.routeAssign[u.id]))];
+  const totalStrength = assigned.reduce((a,u)=>a+u.strength,0);
+  const morale = avgMorale();
+  const intel = S.intelligence;
+
+  const criteria = {
+    routes: routesUsed.length>=2,
+    strength: totalStrength>=150,
+    morale: morale>=40,
+    intel: intel>=40,
+  };
+  const metCount = Object.values(criteria).filter(Boolean).length;
+
+  S.offensiveLaunched = true;
+  addLog('offensiveBegins',{},'good');
+
+  let outcome;
+  if(metCount>=4){ outcome='VICTORY'; }
+  else if(metCount>=2){ outcome='PARTIAL'; }
+  else { outcome='DEFEAT'; }
+
+  if(outcome!=='DEFEAT'){
+    locById('YOGYA').owner='INDONESIA_TEMP';
+    addLog('offensiveBreakthrough',{},'good');
+  }
+
+  const score = computeScore(criteria, metCount);
+  endGame(outcome!=='DEFEAT', false, {outcome, criteria, metCount, score, routesUsed, totalStrength, morale, intel});
+}
+
+function computeScore(criteria, metCount){
+  const survivalRatio = combatUnits(indonesianUnits()).length / 3;
+  const survival = clamp(survivalRatio,0,1)*20;
+  const moraleScore = (avgMorale()/100)*15;
+  const basesHeld = BASE_IDS.filter(b=>unitsAt(b,'INDONESIA').length>0).length;
+  const territory = (basesHeld/3)*15;
+  const intelScore = (S.intelligence/100)*15;
+  const routesUsed = [...new Set(Object.values(S.routeAssign))].length;
+  const coordination = (routesUsed/3)*15;
+  const civilian = (S.units.some(u=>u.type==='LOCAL_SUPPORT'&&u.status==='ACTIVE') ? 10 : 4);
+  const finalOff = (metCount/4)*10;
+  return Math.round(survival+moraleScore+territory+intelScore+coordination+civilian+finalOff);
+}
+
+/* ---------------------- WIN / LOSE SCREEN ---------------------- */
+function endGame(won, isSimpleFail, details){
+  S.gameOver = true; S.outcome = won?'VICTORY':'DEFEAT';
+  S.endInfo = { isSimpleFail: !!isSimpleFail, details: details||null };
+  renderEndScreen();
+}
+
+function renderEndScreen(){
+  const el = document.getElementById('end-content');
+  const info = S.endInfo;
+  let html = '';
+  if(info.details){
+    const d = info.details;
+    if(d.outcome==='VICTORY'){
+      html += `<div class="stamp">${t('ending.stampOff')}</div><h1>${t('ending.victoryH1')}</h1>
+      <p class="lead">${t('ending.victoryL1')}</p>
+      <p class="lead">${t('ending.victoryL2')}</p>
+      <p class="lead">${t('ending.victoryL3')}</p>`;
+    } else if(d.outcome==='PARTIAL'){
+      html += `<div class="stamp">${t('ending.stampOff')}</div><h1>${t('ending.partialH1')}</h1>
+      <p class="lead">${t('ending.partialL1')}</p>
+      <p class="lead">${t('ending.partialL2')}</p>`;
+    } else {
+      html += `<div class="stamp">${t('ending.stampOff')}</div><h1>${t('ending.defeatH1')}</h1>
+      <p class="lead">${t('ending.defeatL1')}</p>
+      <p class="lead">${t('ending.defeatNote')}</p>`;
+    }
+    html += `<h2>${t('ending.scoreLabel')}: ${d.score} / 100</h2>
+    <p class="small" style="text-align:left;">${t('ending.statsLine',{routes:d.routesUsed.length, strength:Math.round(d.totalStrength), morale:d.morale, intel:d.intel})}</p>`;
+  } else {
+    html += `<div class="stamp">${t('ending.stampFail')}</div><h1>${t('ending.failH1')}</h1>
+    <p class="lead">${t('ending.simpleMsg')}</p>
+    <p class="lead">${t('ending.failNote')}</p>`;
+  }
+  html += `<div class="btn-row"><button class="primary" onclick="location.reload()">${t('ending.btnAgain')}</button>
+  <button class="ghost" onclick="openContext()">${t('ending.btnContext')}</button>
+  <button class="ghost" onclick="location.href='index.html'">${t('ending.btnMap')||'KEMBALI KE PETA'}</button></div>`;
+  el.innerHTML = html;
+  try{
+    var key = "perjuangan_v2_progress";
+    var p = JSON.parse(localStorage.getItem(key) || '{"completed":[]}');
+    if(p.completed.indexOf("agresi-gerilya") === -1) p.completed.push("agresi-gerilya");
+    localStorage.setItem(key, JSON.stringify(p));
+  }catch(e){}
+  document.getElementById('screen-end').classList.remove('hidden');
+}
+
+/* ---------------------- MAP RENDER ---------------------- */
+function iconFor(type){
+  switch(type){
+    case 'CITY': return '<rect x="-8" y="-8" width="16" height="16" rx="2"/>';
+    case 'AIRFIELD': return '<polygon points="0,-10 10,0 0,10 -10,0"/>';
+    case 'VILLAGE': return '<polygon points="0,-9 8,-1 8,9 -8,9 -8,-1"/>';
+    case 'BASE': return '<polygon points="0,-10 9,7 -9,7"/>';
+    case 'HILLS': return '<polygon points="-10,7 -3,-6 3,-1 10,7"/>';
+    default: return '<circle r="7"/>';
+  }
+}
+
+function renderMap(){
+  const svg = document.getElementById('svg-map');
+  let s = '';
+  S.locations.forEach(l=>{
+    l.edges.forEach(eid=>{
+      const target = locById(eid);
+      if(l.id < target.id || !target.edges.includes(l.id)){
+        s += `<line class="edge-line" x1="${l.x}" y1="${l.y}" x2="${target.x}" y2="${target.y}"/>`;
+      }
+    });
+  });
+
+  S.locations.forEach(l=>{
+    const ownerColor = l.owner==='DUTCH' ? 'var(--dutch)' : (l.owner==='INDONESIA_TEMP' ? 'var(--gold)' : (l.owner==='INDONESIA' ? 'var(--red)' : '#888'));
+    s += `<g class="node-circle" onclick="handleNodeClick('${l.id}')" transform="translate(${l.x},${l.y})">
+      <circle r="16" fill="rgba(20,23,15,.55)" stroke="${ownerColor}" stroke-width="2.5"/>
+      <g fill="${ownerColor}" opacity="0.9">${iconFor(l.type)}</g>
+      </g>
+      <text class="node-label" x="${l.x}" y="${l.y+30}" text-anchor="middle">${locName(l.id)}</text>`;
+    if(l.strategicValue>=5){
+      s += `<text x="${l.x+15}" y="${l.y-13}" fill="var(--gold)" font-size="13">&#9733;</text>`;
+    }
+  });
+
+  const grouped = {};
+  S.units.filter(u=>u.status==='ACTIVE').forEach(u=>{
+    if(u.faction==='DUTCH'){
+      const loc = locById(u.location);
+      const visible = u.type==='DUTCH_GARRISON' || (loc.discoveredUntil && loc.discoveredUntil>=S.turn) ||
+        indonesianUnits().some(iu=> iu.location===u.location || locById(iu.location).edges.includes(u.location));
+      if(!visible) return;
+    }
+    grouped[u.location] = grouped[u.location]||[];
+    grouped[u.location].push(u);
+  });
+  Object.keys(grouped).forEach(locId=>{
+    const loc = locById(locId);
+    const list = grouped[locId];
+    list.forEach((u,i)=>{
+      const angle = (i/list.length)*2*Math.PI;
+      const r = list.length>1?22:0;
+      const ux = loc.x + Math.cos(angle)*r;
+      const uy = loc.y + Math.sin(angle)*r - 26;
+      const color = u.faction==='INDONESIA' ? 'var(--white-ac)' : 'var(--dutch-bright)';
+      const fill = u.faction==='INDONESIA' ? 'var(--red)' : 'var(--dutch)';
+      const sel = u.id===S.selectedUnitId ? 'selected' : '';
+      const hiddenCls = u.hidden ? 'hidden-unit' : '';
+      s += `<g class="unit-marker ${sel} ${hiddenCls}" onclick="event.stopPropagation(); ${u.faction==='INDONESIA'?`selectUnit('${u.id}')`:`handleNodeClick('${loc.id}')`}" transform="translate(${ux},${uy})">
+        <circle class="ring" r="10" fill="${fill}" stroke="${color}" stroke-width="1.5"/>
+        <text y="4" text-anchor="middle" font-size="10" fill="#fff">${unitGlyph(u.type)}</text>
+      </g>`;
+    });
+  });
+
+  svg.innerHTML = s;
+}
+
+function unitGlyph(type){
+  return {INFANTRY:'I',GUERRILLA:'G',COMMAND:'C',LOCAL_SUPPORT:'S',
+    DUTCH_INFANTRY:'I',DUTCH_MOBILE:'M',DUTCH_GARRISON:'F',DUTCH_PATROL:'P'}[type]||'?';
+}
+
+/* ---------------------- UI RENDER ---------------------- */
+function currentPhaseInfo(){
+  if(S.phase==='PHASE4') return t('phase.PHASE4_'+(S.phase4Reason||'ready'));
+  return t('phase.'+S.phase);
+}
+
+function render(){
+  document.getElementById('tb-date').textContent = dateForTurn(S.turn);
+  document.getElementById('tb-turn').textContent = S.turn+' / '+MAX_TURN;
+  const pInfo = currentPhaseInfo();
+  document.getElementById('tb-phase').textContent = pInfo.name;
+  document.getElementById('tb-morale-bar').style.width = avgMorale()+'%';
+  document.getElementById('tb-intel-bar').style.width = S.intelligence+'%';
+  document.getElementById('objective-text').textContent = S.demo && S.phase==='PHASE3' ? t('phase.demo').objective : pInfo.objective;
+
+  const banner = document.getElementById('phase-banner');
+  if(S.pendingAction){
+    banner.style.display='block';
+    banner.textContent = S.pendingAction==='MOVE' ? t('banner.move') : t('banner.attack');
+  } else { banner.style.display='none'; }
+
+  const ul = document.getElementById('unit-list-id');
+  const allShown = combatUnits(indonesianUnits()).concat(indonesianUnits().filter(u=>u.type==='LOCAL_SUPPORT'));
+  ul.innerHTML = allShown.map(u=>{
+    return `<div class="unit-card faction-INDONESIA" onclick="selectUnit('${u.id}')">
+      <div class="u-name">${unitName(u)}</div>
+      <div class="small">${t('unitType.'+u.type)} · ${locName(u.location)}</div>
+      <div class="stat-row"><span>${t('stat.Strength')}</span><span>${u.strength}</span></div>
+      <div class="stat-bar-wrap"><div class="stat-bar" style="width:${u.strength}%;background:var(--red);"></div></div>
+    </div>`;
+  }).join('') || `<div class="small">${t('ui.noForces')}</div>`;
+
+  const offPanel = document.getElementById('offensive-panel');
+  if(S.offensiveUnlocked && !S.offensiveLaunched){
+    offPanel.style.display='block';
+    const assigned = Object.keys(S.routeAssign);
+    const routesUsed = [...new Set(Object.values(S.routeAssign))];
+    document.getElementById('offensive-status').innerHTML =
+      `${t('ui.unitsAssigned')}: ${assigned.length} &nbsp; | &nbsp; ${t('ui.routesUsed')}: ${routesUsed.length}/3<br>${t('ui.assignHint')}`;
+  } else {
+    offPanel.style.display='none';
+  }
+
+  const panel = document.getElementById('unit-panel');
+  const empty = document.getElementById('unit-panel-empty');
+  const u = unitById(S.selectedUnitId);
+  if(!u || u.faction!=='INDONESIA'){
+    panel.style.display='none'; empty.style.display='block';
+  } else {
+    panel.style.display='block'; empty.style.display='none';
+    const loc = locById(u.location);
+    let routeButtons = '';
+    if(S.offensiveUnlocked && !S.offensiveLaunched && u.type!=='LOCAL_SUPPORT'){
+      routeButtons = `<div class="section"><div class="panel-title">${t('ui.approachRoute')}</div>` +
+        ['NORTH','WEST','SOUTHEAST'].map(r=>`<span class="route-tag ${S.routeAssign[u.id]===r?'active':''}" onclick="assignRoute('${u.id}','${r}')">${t('route.'+r)}</span>`).join('') +
+        `</div>`;
+    }
+    panel.innerHTML = `
+      <div class="section">
+        <div class="u-name" style="font-size:13.5px;">${unitName(u)}</div>
+        <div class="small">${t('unitType.'+u.type)} · ${locName(u.location)} (${t('terrain.'+loc.terrain)})</div>
+        ${u.hidden?`<div class="small" style="color:var(--gold);">${t('ui.concealed')}</div>`:''}
+      </div>
+      <div class="section">
+        ${statBar(t('stat.Strength'),u.strength,'var(--red)')}
+        ${statBar(t('stat.Morale'),u.morale,'var(--ok)')}
+        ${statBar(t('stat.Supply'),u.supply,'var(--dutch-bright)')}
+        ${statBar(t('stat.Fatigue'),u.fatigue,'var(--danger)')}
+      </div>
+      <div class="section">
+        <div class="panel-title">${t('ui.ordersTitle')}</div>
+        <div class="cmd-grid">
+          <button onclick="issueCommand('MOVE')">${t('cmd.MOVE')}</button>
+          <button ${u.type==='LOCAL_SUPPORT'?'disabled':''} onclick="issueCommand('ATTACK')">${t('cmd.ATTACK')}</button>
+          <button onclick="issueCommand('RETREAT')">${t('cmd.RETREAT')}</button>
+          <button onclick="issueCommand('DEFEND')">${t('cmd.DEFEND')}</button>
+          <button onclick="issueCommand('HIDE')">${t('cmd.HIDE')}</button>
+          <button onclick="issueCommand('SCOUT')">${t('cmd.SCOUT')}</button>
+          <button onclick="issueCommand('REGROUP')">${t('cmd.REGROUP')}</button>
+          <button onclick="issueCommand('WAIT')">${t('cmd.WAIT')}</button>
+        </div>
+      </div>
+      ${routeButtons}
+    `;
+  }
+
+  const logEl = document.getElementById('log-list');
+  logEl.innerHTML = S.log.slice(-60).map(l=>`<p class="${l.cls}"><span class="turn-tag">[T${l.turn}]</span> ${t('log.'+l.key, l.params)}</p>`).join('');
+  logEl.scrollTop = logEl.scrollHeight;
+
+  document.getElementById('summary-text').textContent = t('ui.summary',{units:combatUnits(indonesianUnits()).length, morale:avgMorale(), intel:S.intelligence});
+
+  renderMap();
+}
+
+function statBar(label,val,color){
+  return `<div class="stat-row"><span>${label}</span><span>${val}</span></div>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:${val}%;background:${color};"></div></div>`;
+}
+
+/* ---------------------- BOOT / MODALS ---------------------- */
+function startGame(demo){
+  document.getElementById('screen-title').classList.add('hidden');
+  S = newGameState(demo);
+  if(demo){
+    S.turn = 7;
+    S.phase='PHASE3';
+    S.intelligence = 55;
+    locById('YOGYA').owner='DUTCH'; locById('MAGUWO').owner='DUTCH';
+    S.units.forEach(u=>{
+      if(u.faction==='INDONESIA'){ u.morale=65; u.supply=60; }
+    });
+    unitById('ID1').location='KALIURANG';
+    unitById('ID2').location='WONOSARI';
+    unitById('ID3').location='MENOREH';
+    unitById('ID4').location='GODEAN';
+    S.units.push(makeUnit({id:'ID_R1', nameKey:'sukarelawan', nameParams:{n:1}, faction:'INDONESIA', type:'GUERRILLA', location:'KALIURANG',
+      strength:60, morale:70, supply:60, mobility:2, stealth:55, attack_power:38, defense_power:32}));
+    S.units.push(makeUnit({id:'ID_R2', nameKey:'sukarelawan', nameParams:{n:2}, faction:'INDONESIA', type:'GUERRILLA', location:'WONOSARI',
+      strength:60, morale:70, supply:60, mobility:2, stealth:55, attack_power:38, defense_power:32}));
+    S.units.push(makeUnit({id:'DU_GARR', nameKey:'garnisun_yogya', faction:'DUTCH', type:'DUTCH_GARRISON',
+      location:'YOGYA', strength:80, morale:70, supply:80, mobility:1, stealth:5, attack_power:50, defense_power:75}));
+    addLog('demoStart',{},'good');
+  } else {
+    addLog('invasion1',{},'warn');
+    addLog('invasion2',{},'warn');
+  }
+  document.getElementById('app').classList.add('active');
+  document.getElementById('disclaimer-footer').classList.remove('hidden');
+  render();
+  initMapZoom();
+  if(!demo) openTutorial();
+}
+
+function openTutorial(){ document.getElementById('modal-tutorial').classList.remove('hidden'); }
+function closeTutorial(){ document.getElementById('modal-tutorial').classList.add('hidden'); }
+function openContext(){ document.getElementById('modal-context').classList.remove('hidden'); }
+function closeContext(){ document.getElementById('modal-context').classList.add('hidden'); }
+
+/* ---------------------- MAP ZOOM ---------------------- */
+var mapZoomState = { scale: 1, translateX: 0, translateY: 0 };
+var mapMinScale = 0.5;
+var mapMaxScale = 4;
+var mapContainer = null;
+var isDragging = false;
+var dragStartX = 0;
+var dragStartY = 0;
+var dragStartTranslateX = 0;
+var dragStartTranslateY = 0;
+
+function initMapZoom(){
+  mapContainer = document.getElementById('map-zoom-container');
+  if(!mapContainer) return;
+  
+  var svgMap = document.getElementById('svg-map');
+  if(!svgMap) return;
+  
+  // Wheel zoom (desktop)
+  svgMap.addEventListener('wheel', function(e){
+    e.preventDefault();
+    var delta = e.deltaY > 0 ? -0.1 : 0.1;
+    var newScale = Math.max(mapMinScale, Math.min(mapMaxScale, mapZoomState.scale + delta));
+    
+    // Get cursor position relative to container
+    var rect = mapContainer.getBoundingClientRect();
+    var cursorX = e.clientX - rect.left;
+    var cursorY = e.clientY - rect.top;
+    
+    // Calculate world point under cursor before zoom
+    var worldX = (cursorX - mapZoomState.translateX) / mapZoomState.scale;
+    var worldY = (cursorY - mapZoomState.translateY) / mapZoomState.scale;
+    
+    // Update scale
+    mapZoomState.scale = newScale;
+    
+    // Calculate new translate to keep world point under cursor
+    mapZoomState.translateX = cursorX - worldX * mapZoomState.scale;
+    mapZoomState.translateY = cursorY - worldY * mapZoomState.scale;
+    
+    applyMapTransform();
+  }, { passive: false });
+  
+  // Mouse drag (desktop)
+  svgMap.addEventListener('mousedown', function(e){
+    if(e.button !== 0) return;
+    isDragging = true;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    dragStartTranslateX = mapZoomState.translateX;
+    dragStartTranslateY = mapZoomState.translateY;
+    svgMap.style.cursor = 'grabbing';
+  });
+  
+  document.addEventListener('mousemove', function(e){
+    if(!isDragging) return;
+    var dx = e.clientX - dragStartX;
+    var dy = e.clientY - dragStartY;
+    mapZoomState.translateX = dragStartTranslateX + dx;
+    mapZoomState.translateY = dragStartTranslateY + dy;
+    applyMapTransform();
+  });
+  
+  document.addEventListener('mouseup', function(){
+    if(isDragging){
+      isDragging = false;
+      svgMap.style.cursor = 'grab';
+    }
+  });
+  
+  // Touch pinch zoom (mobile)
+  var initialPinchDistance = 0;
+  var initialScale = 1;
+  var initialPinchCenterX = 0;
+  var initialPinchCenterY = 0;
+  
+  svgMap.addEventListener('touchstart', function(e){
+    if(e.touches.length === 2){
+      initialPinchDistance = getPinchDistance(e.touches);
+      initialScale = mapZoomState.scale;
+      var rect = mapContainer.getBoundingClientRect();
+      initialPinchCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+      initialPinchCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+    } else if(e.touches.length === 1){
+      isDragging = true;
+      dragStartX = e.touches[0].clientX;
+      dragStartY = e.touches[0].clientY;
+      dragStartTranslateX = mapZoomState.translateX;
+      dragStartTranslateY = mapZoomState.translateY;
+    }
+  }, { passive: true });
+  
+  svgMap.addEventListener('touchmove', function(e){
+    if(e.touches.length === 2){
+      e.preventDefault();
+      var currentDistance = getPinchDistance(e.touches);
+      var scaleChange = currentDistance / initialPinchDistance;
+      var newScale = Math.max(mapMinScale, Math.min(mapMaxScale, initialScale * scaleChange));
+      
+      // Get center of pinch
+      var rect = mapContainer.getBoundingClientRect();
+      var touchCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+      var touchCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+      
+      // Calculate world point under pinch center before zoom
+      var worldX = (initialPinchCenterX - mapZoomState.translateX) / mapZoomState.scale;
+      var worldY = (initialPinchCenterY - mapZoomState.translateY) / mapZoomState.scale;
+      
+      // Update scale
+      mapZoomState.scale = newScale;
+      
+      // Calculate new translate to keep world point under pinch center
+      mapZoomState.translateX = touchCenterX - worldX * mapZoomState.scale;
+      mapZoomState.translateY = touchCenterY - worldY * mapZoomState.scale;
+      
+      applyMapTransform();
+    } else if(e.touches.length === 1 && isDragging){
+      e.preventDefault();
+      var dx = e.touches[0].clientX - dragStartX;
+      var dy = e.touches[0].clientY - dragStartY;
+      mapZoomState.translateX = dragStartTranslateX + dx;
+      mapZoomState.translateY = dragStartTranslateY + dy;
+      applyMapTransform();
+    }
+  }, { passive: false });
+  
+  svgMap.addEventListener('touchend', function(){
+    isDragging = false;
+  });
+  
+  svgMap.style.cursor = 'grab';
+}
+
+function getPinchDistance(touches){
+  var dx = touches[0].clientX - touches[1].clientX;
+  var dy = touches[0].clientY - touches[1].clientY;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function applyMapTransform(){
+  if(!mapContainer) return;
+  mapContainer.style.transform = 'translate(' + mapZoomState.translateX + 'px, ' + mapZoomState.translateY + 'px) scale(' + mapZoomState.scale + ')';
+}
+
+function resetMapZoom(){
+  mapZoomState = { scale: 1, translateX: 0, translateY: 0 };
+  applyMapTransform();
+}
+
+/* ---------------------- INIT ---------------------- */
+applyStaticI18n();
+
+</script>
+</body>
+</html>

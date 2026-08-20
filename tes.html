@@ -1,0 +1,1667 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUARA PERLAWANAN — Voice of Resistance</title>
+<style>
+:root{
+  --bg:#0a0a0a;
+  --green:#39FF14;
+  --green-dim:#1e8a0c;
+  --green-glow:rgba(57,255,20,0.55);
+  --red:#FF5555;
+  --amber:#ffb347;
+  --panel:#0f130f;
+  --line:#1c2b17;
+  --font-mono:'Courier New', 'Consolas', monospace;
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0;padding:0;height:100%;background:var(--bg);
+  color:var(--green);font-family:var(--font-mono);
+  overflow:hidden;user-select:none;
+}
+button{
+  font-family:var(--font-mono);background:#0d150d;color:var(--green);
+  border:1px solid var(--green-dim);padding:8px 14px;cursor:pointer;
+  letter-spacing:1px;text-transform:uppercase;font-size:12px;
+  transition:all .15s;
+}
+button:hover{background:var(--green);color:#000;box-shadow:0 0 12px var(--green-glow);}
+button:disabled{opacity:.35;cursor:not-allowed;}
+button:disabled:hover{background:#0d150d;color:var(--green);box-shadow:none;}
+h1,h2,h3{margin:0;letter-spacing:2px;}
+
+/* ---------- CRT OVERLAY ---------- */
+#crt-overlay{
+  position:fixed;inset:0;pointer-events:none;z-index:9999;
+  background:
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px, transparent 1px, transparent 3px);
+  mix-blend-mode:overlay;
+}
+#crt-vignette{
+  position:fixed;inset:0;pointer-events:none;z-index:9998;
+  box-shadow:inset 0 0 180px 60px rgba(0,0,0,0.75);
+}
+#crt-flicker{
+  position:fixed;inset:0;pointer-events:none;z-index:9997;
+  background:var(--green);opacity:0;
+  animation:flicker 6.5s infinite;
+}
+@keyframes flicker{
+  0%,96%,100%{opacity:0;}
+  97%{opacity:.02;}
+  98%{opacity:0;}
+}
+.reduced-motion #crt-flicker{animation:none;}
+.glitch #crt-overlay{animation:glitchshift .25s steps(2) 3;}
+@keyframes glitchshift{
+  0%{transform:translate(0,0);}
+  25%{transform:translate(-3px,1px);}
+  50%{transform:translate(3px,-1px);}
+  75%{transform:translate(-2px,0);}
+  100%{transform:translate(0,0);}
+}
+
+/* ---------- LAYOUT ---------- */
+#app{position:relative;width:100vw;height:100vh;}
+.screen{
+  position:absolute;inset:0;display:none;flex-direction:column;
+}
+.screen.active{display:flex;}
+
+/* ---------- TOP BAR ---------- */
+#topbar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:6px 14px;border-bottom:1px solid var(--line);
+  background:var(--panel);font-size:11px;flex-shrink:0;
+}
+#lang-toggle button, #lang-toggle-game button{padding:4px 10px;}
+#lang-toggle button.active, #lang-toggle-game button.active{background:var(--green);color:#000;}
+
+/* ---------- MENU ---------- */
+#screen-menu{
+  align-items:center;justify-content:center;text-align:center;
+  background:radial-gradient(ellipse at center, #0f1a0f 0%, #050705 80%);
+}
+.menu-box{
+  border:1px solid var(--green-dim);padding:36px 48px;background:rgba(10,15,10,.55);
+  box-shadow:0 0 40px rgba(57,255,20,.08);max-width:560px;
+}
+.menu-title{font-size:34px;font-weight:bold;text-shadow:0 0 12px var(--green-glow);letter-spacing:4px;}
+.menu-subtitle{font-size:15px;color:var(--amber);margin-top:4px;letter-spacing:3px;}
+.menu-loc{margin-top:14px;font-size:12px;color:#7fbf6a;}
+.menu-tagline{margin:18px 0;font-size:12px;font-style:italic;color:#8ad678;line-height:1.6;}
+.menu-buttons{display:flex;flex-direction:column;gap:8px;margin-top:20px;align-items:center;}
+.menu-buttons button{width:220px;}
+.static-line{height:2px;width:100%;background:repeating-linear-gradient(90deg,var(--green-dim) 0 2px,transparent 2px 4px);opacity:.4;margin:16px 0;}
+
+/* ---------- GAME SCREEN ---------- */
+#screen-game{flex-direction:column;}
+#game-body{display:flex;flex:1;min-height:0;}
+#map-pane{width:60%;position:relative;border-right:1px solid var(--line);background:#060a06;}
+#console-pane{width:40%;display:flex;flex-direction:column;background:var(--panel);overflow-y:auto;padding:10px;gap:10px;}
+canvas#mapCanvas{width:100%;height:100%;display:block;}
+
+/* ---------- RESPONSIVE DESIGN ---------- */
+@media (max-width: 1024px) {
+  #map-pane{width:55%;}
+  #console-pane{width:45%;}
+  .menu-box{padding:28px 36px;}
+  .menu-title{font-size:28px;}
+}
+
+@media (max-width: 768px) {
+  #game-body{flex-direction:column;}
+  #map-pane{width:100%;height:50%;border-right:none;border-bottom:1px solid var(--line);}
+  #console-pane{width:100%;height:50%;padding:8px;gap:8px;}
+  .menu-box{padding:20px 24px;max-width:90%;}
+  .menu-title{font-size:24px;}
+  .menu-subtitle{font-size:13px;}
+  .menu-buttons button{width:180px;padding:12px 14px;}
+  .console-block{padding:8px;}
+  .bar-label{width:90px;font-size:10px;}
+  #freqDisplay{font-size:18px;}
+  #waveCanvas{height:60px;}
+  #broadcastBtn{padding:12px;font-size:13px;}
+  .control-row button{font-size:11px;padding:8px 6px;}
+  #topbar{padding:4px 10px;font-size:10px;}
+  #lang-toggle button, #lang-toggle-game button{padding:4px 10px;font-size:11px;}
+}
+
+@media (max-width: 480px) {
+  .menu-box{padding:16px 20px;}
+  .menu-title{font-size:20px;letter-spacing:2px;}
+  .menu-subtitle{font-size:11px;letter-spacing:1px;}
+  .menu-tagline{font-size:11px;}
+  .menu-buttons button{width:100%;padding:14px 16px;font-size:13px;}
+  .console-block h3{font-size:10px;}
+  .bar-row{font-size:10px;}
+  .bar-label{width:70px;}
+  .bar-outer{height:10px;}
+  #freqDisplay{font-size:16px;}
+  #waveCanvas{height:50px;}
+  #broadcastBtn{padding:14px;font-size:13px;}
+  .control-row{flex-wrap:wrap;}
+  .control-row button{min-width:80px;padding:10px 8px;font-size:11px;}
+  #hud-top{font-size:10px;padding:4px 8px;}
+  #warningBanner{font-size:10px;top:30px;}
+  .modal-box{padding:20px 24px;max-height:90vh;}
+  .modal-box h2{font-size:13px;}
+  .modal-box p{font-size:11px;}
+  .choice-btn{font-size:11px;padding:10px;}
+  .codex-entry{font-size:11px;}
+  #endingTitle{font-size:16px;}
+  #endingRank{font-size:28px;}
+}
+
+/* Touch-friendly controls */
+@media (hover: none) and (pointer: coarse) {
+  button{padding:12px 16px;font-size:14px;}
+  #broadcastBtn{padding:14px;font-size:15px;}
+  .control-row button{padding:10px;font-size:12px;}
+  input[type=range]{height:20px;}
+}
+
+.console-block{border:1px solid var(--line);padding:10px;background:#0b110b;}
+.console-block h3{font-size:11px;color:var(--amber);letter-spacing:2px;margin-bottom:8px;}
+.bar-row{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:11px;}
+.bar-label{width:110px;flex-shrink:0;}
+.bar-outer{flex:1;height:12px;border:1px solid var(--green-dim);background:#040604;position:relative;}
+.bar-inner{height:100%;background:var(--green);box-shadow:0 0 8px var(--green-glow);transition:width .3s;}
+.bar-inner.detection{background:var(--red);box-shadow:0 0 8px rgba(255,85,85,.6);}
+.bar-value{width:42px;text-align:right;font-size:11px;}
+
+#freqDisplay{font-size:22px;text-align:center;letter-spacing:2px;margin:6px 0;text-shadow:0 0 8px var(--green-glow);}
+#freqSliderWrap{padding:10px 4px;}
+input[type=range]{width:100%;accent-color:var(--green);}
+#waveCanvas{width:100%;height:80px;background:#040604;border:1px solid var(--green-dim);display:block;}
+#lockStatus{text-align:center;font-size:13px;margin-top:6px;letter-spacing:2px;height:18px;}
+#lockStatus.locked{color:var(--green);text-shadow:0 0 10px var(--green-glow);animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.55;}}
+
+#broadcastBtn{width:100%;padding:12px;font-size:14px;margin-top:8px;}
+#broadcastBtn.on{background:var(--green);color:#000;box-shadow:0 0 16px var(--green-glow);}
+
+.control-row{display:flex;gap:8px;margin-top:8px;}
+.control-row button{flex:1;font-size:10px;padding:6px;}
+
+#objectiveBox{font-size:11px;line-height:1.6;}
+#statusLine{font-size:11px;color:var(--amber);}
+#voiceSource{font-size:10px;color:#6a8a5f;margin-top:4px;}
+
+/* HUD top of map */
+#hud-top{
+  position:absolute;top:0;left:0;right:0;padding:6px 10px;
+  background:linear-gradient(rgba(0,0,0,.7),transparent);
+  font-size:11px;display:flex;justify-content:space-between;pointer-events:none;
+}
+#warningBanner{
+  position:absolute;top:34px;left:50%;transform:translateX(-50%);
+  color:var(--red);font-size:12px;letter-spacing:2px;text-shadow:0 0 8px var(--red);
+  display:none;
+}
+#warningBanner.show{display:block;animation:blink .6s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.2;}}
+
+/* ---------- MODALS / OVERLAYS ---------- */
+.overlay{
+  position:absolute;inset:0;background:rgba(0,0,0,.82);
+  display:none;align-items:center;justify-content:center;z-index:50;
+}
+.overlay.active{display:flex;}
+.modal-box{
+  border:1px solid var(--green-dim);background:#0a100a;padding:26px 32px;
+  max-width:520px;width:90%;box-shadow:0 0 30px rgba(57,255,20,.12);
+  max-height:82vh;overflow-y:auto;
+}
+.modal-box h2{color:var(--amber);font-size:15px;margin-bottom:10px;letter-spacing:2px;}
+.modal-box p{font-size:12px;line-height:1.7;margin:8px 0;}
+.choice-btn{display:block;width:100%;text-align:left;margin:6px 0;padding:10px;font-size:11px;}
+.choice-effects{color:#7fbf6a;font-size:10px;display:block;margin-top:3px;}
+.typewriter-line{white-space:pre-wrap;font-size:12px;line-height:1.8;min-height:1.4em;}
+.codex-entry{border-bottom:1px solid var(--line);padding:10px 0;font-size:12px;line-height:1.6;}
+.codex-tag{display:inline-block;font-size:9px;padding:2px 6px;margin-bottom:4px;letter-spacing:1px;}
+.codex-tag.record{background:var(--green-dim);color:#000;}
+.codex-tag.abstraction{background:#553311;color:var(--amber);}
+.modal-close{margin-top:14px;}
+
+/* Ending */
+#endingTitle{font-size:20px;color:var(--amber);text-shadow:0 0 10px var(--amber);letter-spacing:2px;}
+#endingScore{margin-top:14px;font-size:11px;line-height:1.8;border-top:1px solid var(--line);padding-top:10px;}
+#endingRank{font-size:34px;color:var(--green);text-align:center;text-shadow:0 0 14px var(--green-glow);}
+
+/* screen shake */
+.shake{animation:shakeAnim .4s;}
+@keyframes shakeAnim{
+  0%{transform:translate(0,0);}20%{transform:translate(-6px,4px);}
+  40%{transform:translate(5px,-5px);}60%{transform:translate(-4px,3px);}
+  80%{transform:translate(3px,-2px);}100%{transform:translate(0,0);}
+}
+.redflash{position:absolute;inset:0;background:var(--red);opacity:0;pointer-events:none;z-index:40;}
+.redflash.flash{animation:redflashAnim .5s ease-out;}
+@keyframes redflashAnim{0%{opacity:.55;}100%{opacity:0;}}
+
+::-webkit-scrollbar{width:8px;}
+::-webkit-scrollbar-thumb{background:var(--green-dim);}
+::-webkit-scrollbar-track{background:#050705;}
+
+/* ---------- ENTRY GATE (autoplay-policy click-to-enter) ---------- */
+#entry-gate{
+  position:fixed;inset:0;z-index:10050;background:#0A0A0A;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+  gap:18px;
+}
+#entry-gate.hidden{display:none;}
+#entry-gate p{font-size:12px;letter-spacing:2px;color:var(--green);text-shadow:0 0 8px var(--green-glow);text-align:center;}
+#entry-gate button{padding:12px 26px;font-size:12px;}
+
+/* ---------- FULL-SCREEN CINEMATIC INTRO WAVE ---------- */
+#introWaveLayer{
+  position:fixed;inset:0;z-index:10000;background:#0A0A0A;
+  display:none;align-items:center;justify-content:center;overflow:hidden;
+}
+#introWaveLayer.active{display:flex;}
+#introWaveCanvas{
+  position:fixed;inset:0;width:100vw;height:100vh;display:block;
+}
+#introClimaxText{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-size:44px;letter-spacing:6px;color:var(--green);
+  text-shadow:0 0 18px var(--green-glow),0 0 40px var(--green-glow);
+  opacity:0;pointer-events:none;z-index:10001;text-align:center;
+  transition:opacity .25s ease-out;white-space:nowrap;
+}
+#introClimaxText.show{opacity:1;}
+#introWaveLayer.shake{animation:shakeAnim .4s;}
+@media (max-width:820px){
+  #introClimaxText{font-size:24px;letter-spacing:3px;}
+}
+
+@media (max-width:820px){
+  #game-body{flex-direction:column;}
+  #map-pane,#console-pane{width:100%;}
+  #map-pane{height:42vh;}
+  #console-pane{height:58vh;}
+}
+</style>
+</head>
+<body>
+<div id="crt-overlay"></div>
+<div id="crt-vignette"></div>
+<div id="crt-flicker"></div>
+
+<!-- ================= CINEMATIC OPENING (full-screen radio wave) ================= -->
+<div id="entry-gate">
+  <p>KLIK UNTUK MASUK — CLICK TO ENTER</p>
+  <button id="entryGateBtn">MASUK / ENTER</button>
+</div>
+<div id="introWaveLayer">
+  <canvas id="introWaveCanvas"></canvas>
+  <div id="introClimaxText"></div>
+</div>
+
+<div id="app">
+
+  <!-- ================= MAIN MENU ================= -->
+  <div class="screen active" id="screen-menu">
+    <div id="topbar" style="position:absolute;top:0;width:100%;">
+      <span></span>
+      <div id="lang-toggle">
+        <button id="btn-lang-id" class="active">ID</button>
+        <button id="btn-lang-en">EN</button>
+      </div>
+    </div>
+    <div class="menu-box">
+      <div class="menu-title">SUARA PERLAWANAN</div>
+      <div class="menu-subtitle">VOICE OF RESISTANCE</div>
+      <div class="menu-loc" data-i18n="menuLocation">SURABAYA — NOVEMBER 1945</div>
+      <div class="static-line"></div>
+      <div class="menu-tagline" data-i18n="tagline">"Ketika senjata tak mampu menjangkau semuanya, biarkan suara yang melakukannya."</div>
+      <div class="menu-buttons">
+        <button id="btn-start" data-i18n="btnStart">MULAI</button>
+        <button id="btn-codex" data-i18n="btnCodex">CATATAN SEJARAH</button>
+        <button id="btn-howto" data-i18n="btnHowTo">CARA BERMAIN</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= INTRO CINEMATIC ================= -->
+  <div class="screen" id="screen-intro" style="align-items:center;justify-content:center;background:#000;">
+    <div class="typewriter-line" id="introText" style="max-width:640px;text-align:center;padding:20px;"></div>
+  </div>
+
+  <!-- ================= GAME SCREEN ================= -->
+  <div class="screen" id="screen-game">
+    <div id="topbar">
+      <span id="statusLine" data-i18n="statusOff">STATUS: SIARAN NONAKTIF</span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <div id="lang-toggle-game">
+          <button id="btn-lang-id-game" class="active">ID</button>
+          <button id="btn-lang-en-game">EN</button>
+        </div>
+        <span id="timeDisplay">00:00</span>
+        <button id="btn-pause" data-i18n="btnPause">JEDA</button>
+      </div>
+    </div>
+    <div id="game-body">
+      <div id="map-pane">
+        <canvas id="mapCanvas"></canvas>
+        <div id="hud-top">
+          <span data-i18n="mapLabel">SURABAYA — MALAM HARI</span>
+          <span id="nodeCountDisplay">0/5</span>
+        </div>
+        <div id="warningBanner" data-i18n="warningTriangulation">PERINGATAN: SINYAL SEDANG DILACAK</div>
+        <div class="redflash" id="redFlash"></div>
+      </div>
+      <div id="console-pane">
+
+        <div class="console-block">
+          <h3 data-i18n="hFrequency">FREKUENSI</h3>
+          <div id="freqDisplay">000.00 MHz</div>
+          <div id="freqSliderWrap">
+            <input type="range" id="freqSlider" min="0" max="1000" value="500">
+          </div>
+          <canvas id="waveCanvas"></canvas>
+          <div id="lockStatus"></div>
+        </div>
+
+        <div class="console-block">
+          <h3 data-i18n="hStatus">STATUS TRANSMISI</h3>
+          <div class="bar-row">
+            <div class="bar-label" data-i18n="lblMorale">SEMANGAT</div>
+            <div class="bar-outer"><div class="bar-inner" id="moraleBar" style="width:50%"></div></div>
+            <div class="bar-value" id="moraleVal">50%</div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label" data-i18n="lblDetection">RADAR</div>
+            <div class="bar-outer"><div class="bar-inner detection" id="detectionBar" style="width:0%"></div></div>
+            <div class="bar-value" id="detectionVal">0%</div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label" data-i18n="lblSignal">SINYAL</div>
+            <div class="bar-outer"><div class="bar-inner" id="signalBar" style="width:0%"></div></div>
+            <div class="bar-value" id="signalVal">0%</div>
+          </div>
+          <button id="broadcastBtn" data-i18n="btnBroadcastOn">MULAI SIARAN [SPACE]</button>
+          <div class="control-row">
+            <button id="btn-relocate" data-i18n="btnRelocate">PINDAH [R]</button>
+            <button id="btn-mute" data-i18n="btnMute">BISU [M]</button>
+          </div>
+          <div id="voiceSource" data-i18n="voiceSim">SUMBER SUARA: SIMULASI</div>
+        </div>
+
+        <div class="console-block">
+          <h3 data-i18n="hObjective">OBJEKTIF UTAMA</h3>
+          <div id="objectiveBox"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= OVERLAYS ================= -->
+
+  <div class="overlay" id="overlay-tutorial">
+    <div class="modal-box">
+      <h2 data-i18n="tutTitle">PELATIHAN OPERATOR</h2>
+      <p class="typewriter-line" id="tutStepText"></p>
+      <button id="btn-tut-next" data-i18n="btnNext">LANJUT</button>
+      <button id="btn-tut-skip" data-i18n="btnSkip">LEWATI</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay-courier">
+    <div class="modal-box">
+      <h2 data-i18n="courierTitle">KURIR DARURAT</h2>
+      <p class="typewriter-line" id="courierText"></p>
+      <div id="courierChoices"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay-pause">
+    <div class="modal-box" style="text-align:center;">
+      <h2 data-i18n="pausedTitle">JEDA</h2>
+      <div class="menu-buttons" style="margin-top:16px;">
+        <button id="btn-resume" data-i18n="btnResume">LANJUTKAN</button>
+        <button id="btn-pause-howto" data-i18n="btnHowTo">CARA BERMAIN</button>
+        <button id="btn-pause-codex" data-i18n="btnCodex">CATATAN SEJARAH</button>
+        <button id="btn-pause-menu" data-i18n="btnMainMenu">MENU UTAMA</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay-howto">
+    <div class="modal-box">
+      <h2 data-i18n="howToTitle">CARA BERMAIN</h2>
+      <div id="howToBody" style="font-size:12px;line-height:1.8;"></div>
+      <button class="modal-close" id="btn-close-howto" data-i18n="btnClose">TUTUP</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay-codex">
+    <div class="modal-box">
+      <h2 data-i18n="codexTitle">CATATAN SEJARAH</h2>
+      <p style="font-size:10px;color:#7fbf6a;" data-i18n="codexDisclaimer">Sebagian mekanisme permainan adalah abstraksi fiktif untuk menyampaikan pentingnya radio, semangat, komunikasi, dan perlawanan secara historis.</p>
+      <div id="codexBody"></div>
+      <button class="modal-close" id="btn-close-codex" data-i18n="btnClose">TUTUP</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay-bombardment">
+    <div class="modal-box" style="text-align:center;border-color:var(--red);">
+      <h2 style="color:var(--red);" data-i18n="bombTitle">TRIANGULASI SELESAI</h2>
+      <p data-i18n="bombText">Peralatan rusak. Anda kehilangan sebagian jaringan.</p>
+      <button id="btn-bomb-continue" data-i18n="btnContinue">LANJUTKAN</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay-ending">
+    <div class="modal-box" style="text-align:center;">
+      <div id="endingTitle"></div>
+      <p id="endingBody" style="text-align:left;"></p>
+      <div id="endingRank"></div>
+      <div id="endingScore"></div>
+      <div class="menu-buttons" style="margin-top:16px;">
+        <button id="btn-ending-history" data-i18n="btnRealHistory">APA YANG NYATA?</button>
+        <button id="btn-restart" data-i18n="btnRestart">MAIN LAGI</button>
+        <button id="btn-ending-menu" data-i18n="btnMainMenu">MENU UTAMA</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay-audio-enable">
+    <div class="modal-box" style="text-align:center;">
+      <p data-i18n="clickAudio">KLIK UNTUK MENGAKTIFKAN AUDIO RADIO</p>
+      <button id="btn-enable-audio" data-i18n="btnOk">OK</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* =========================================================================
+   SUARA PERLAWANAN — VOICE OF RESISTANCE
+   A historical radio-broadcast strategy/puzzle game.
+   ========================================================================= */
+
+/* ---------------------------------------------------------------------
+   1. LOCALIZATION
+--------------------------------------------------------------------- */
+const translations = {
+  id: {
+    menuLocation:"SURABAYA — NOVEMBER 1945",
+    tagline:'"Ketika senjata tak mampu menjangkau semuanya, biarkan suara yang melakukannya."',
+    btnStart:"MULAI", btnCodex:"CATATAN SEJARAH", btnHowTo:"CARA BERMAIN",
+    statusOff:"STATUS: SIARAN NONAKTIF", statusOn:"STATUS: SIARAN AKTIF",
+    btnPause:"JEDA", mapLabel:"SURABAYA — MALAM HARI",
+    warningTriangulation:"PERINGATAN: SINYAL SEDANG DILACAK",
+    hFrequency:"FREKUENSI", hStatus:"STATUS TRANSMISI", hObjective:"OBJEKTIF UTAMA",
+    lblMorale:"SEMANGAT", lblDetection:"RADAR", lblSignal:"SINYAL",
+    btnBroadcastOn:"MULAI SIARAN [SPACE]", btnBroadcastOff:"HENTIKAN SIARAN [SPACE]",
+    btnRelocate:"PINDAH [R]", btnMute:"BISU [M]",
+    voiceSim:"SUMBER SUARA: SIMULASI", voiceReal:"SUMBER SUARA: REKAMAN",
+    tutTitle:"PELATIHAN OPERATOR", btnNext:"LANJUT", btnSkip:"LEWATI",
+    courierTitle:"KURIR DARURAT",
+    pausedTitle:"JEDA", btnResume:"LANJUTKAN", btnMainMenu:"MENU UTAMA",
+    howToTitle:"CARA BERMAIN", btnClose:"TUTUP",
+    codexTitle:"CATATAN SEJARAH",
+    codexDisclaimer:"Sebagian mekanisme permainan adalah abstraksi fiktif untuk menyampaikan pentingnya radio, semangat, komunikasi, dan perlawanan secara historis.",
+    bombTitle:"TRIANGULASI SELESAI", bombText:"Peralatan rusak. Anda kehilangan sebagian jaringan.",
+    btnContinue:"LANJUTKAN", btnRealHistory:"APA YANG NYATA?", btnRestart:"MAIN LAGI",
+    clickAudio:"KLIK UNTUK MENGAKTIFKAN AUDIO RADIO", btnOk:"OK",
+    signalLocked:"SINYAL TERKUNCI", signalSearching:"MENCARI SINYAL...",
+    objectiveText:"Sebarkan siaran ke minimal 5 kampung sambil menjaga SEMANGAT ≥ 60, sebelum RADAR mencapai 100%.",
+    reachedLabel:"Kampung terjangkau",
+    node:"Kampung",
+    introLines:[
+      "SURABAYA","NOVEMBER 1945","",
+      "Kota ini tegang.","","Pesan-pesan berjalan melalui jalanan,\ngang-gang, atap rumah, dan radio.","",
+      "Namun ada satu hal yang dapat menjangkau\nlebih jauh dari seorang kurir:","","SEBUAH SUARA.","",
+      "Tugas Anda sederhana.","","Jaga agar transmisi tetap hidup."
+    ],
+    tutorialSteps:[
+      "Temukan sinyal. Putar tombol FREKUENSI hingga mendekati target.",
+      "Kunci frekuensi. Perhatikan gelombang CRT menjadi stabil dan hijau terang.",
+      "Mulai SIARAN. Semangat rakyat akan meningkat selama Anda mengudara.",
+      "Awasi RADAR. Semakin lama Anda siaran, semakin besar risiko terdeteksi.",
+      "Pindahkan pemancar sebelum mereka menemukan Anda, jika radar terlalu tinggi.",
+      "Pilih dengan bijak saat kurir datang membawa laporan darurat."
+    ],
+    howToBody:`
+      <p><b>TUJUAN:</b> Jaga siaran Bung Tomo tetap hidup. Jangkau minimal 5 kampung dengan SEMANGAT ≥ 60 sebelum RADAR mencapai 100%.</p>
+      <p><b>FREKUENSI:</b> Geser slider agar angka CURRENT mendekati TARGET. Semakin dekat, sinyal semakin bersih dan gelombang semakin stabil.</p>
+      <p><b>SIARAN:</b> Tekan SPASI atau tombol MULAI SIARAN. Selama siaran aktif, semangat naik namun radar juga naik.</p>
+      <p><b>RADAR:</b> Jika mencapai 100%, peralatan Anda akan rusak (bombardir). Tekan R untuk berpindah dan menurunkan radar secara cepat.</p>
+      <p><b>KURIR:</b> Peristiwa acak akan meminta Anda mengambil keputusan yang mengubah semangat dan radar.</p>
+      <p><b>KONTROL:</b> A/D atau slider — tuning · SPASI — siaran on/off · R — pindah · ESC — jeda · M — bisu · Klik tombol ID/EN — bahasa</p>
+    `,
+    codexEntries:[
+      {tag:"record", title:"Bung Tomo", text:"Sutomo, dikenal sebagai Bung Tomo, adalah tokoh yang pidato-pidatonya melalui radio dikenal luas sebagai sumber semangat perlawanan rakyat Surabaya pada November 1945."},
+      {tag:"record", title:"Pertempuran Surabaya", text:"Pertempuran besar di Surabaya meletus pada 10 November 1945, setelah eskalasi ketegangan antara pejuang/rakyat Indonesia dan pasukan Sekutu/Inggris."},
+      {tag:"record", title:"Kedatangan Sekutu", text:"Pasukan Sekutu (termasuk Inggris) tiba di Surabaya setelah Proklamasi Kemerdekaan Indonesia, memicu ketegangan yang meningkat menjelang November 1945."},
+      {tag:"record", title:"Radio sebagai Media Perjuangan", text:"Radio menjadi media komunikasi penting pada masa itu untuk menyebarkan informasi dan membangkitkan semangat juang di tengah situasi yang kacau."},
+      {tag:"record", title:"Peran Rakyat dan Pemuda", text:"Perjuangan di Surabaya melibatkan banyak pihak — pejuang bersenjata, pemuda, organisasi rakyat, dan warga sipil — bukan hasil satu tokoh saja."},
+      {tag:"abstraction", title:"Sistem Frekuensi & Radar", text:"Mekanisme tuning frekuensi, radar deteksi Inggris, dan jaringan kabel dalam game ini adalah abstraksi permainan, bukan klaim bahwa sistem persis ini pernah ada secara historis."},
+      {tag:"abstraction", title:"Peran Operator Radio", text:"Karakter 'operator radio' yang dimainkan pemain adalah tokoh fiktif untuk kebutuhan gameplay, mewakili banyak orang tak dikenal yang membantu penyebaran informasi."}
+    ],
+    endings:{
+      survives:{title:"BABAK 1 — SUARA ITU BERTAHAN", body:"Jaringan berhasil menyebarkan pesan ke banyak kampung dengan risiko yang terkendali. Operator selamat, dan pesan terus berjalan."},
+      flame:{title:"BABAK 2 — SINYAL MENJADI NYALA API", body:"Semangat rakyat memuncak. Anda mengorbankan keselamatan demi menjangkau lebih banyak orang. Pemancar akhirnya dibungkam — tetapi suaranya telah menyebar."},
+      silence:{title:"BABAK 3 — DIAM UNTUK BERTAHAN", body:"Anda memilih keselamatan berulang kali. Jaringan bertahan, tetapi lebih sedikit orang yang mendengar pesan itu."},
+      fallen:{title:"BABAK 4 — JARINGAN RUNTUH", body:"Radar mencapai batas maksimum sebelum pesan cukup tersebar. Stasiun radio ditemukan."}
+    },
+    realHistory:{
+      real:"• Surabaya menjadi pusat perlawanan besar pada 1945.\n• Ketegangan meningkat tajam menjelang 10 November.\n• Bung Tomo dikenal luas terkait siaran radio yang membangkitkan semangat perlawanan.\n• Radio dan komunikasi berperan penting dalam moral perjuangan saat itu.",
+      abstraction:"• Penalaan frekuensi\n• Deteksi radar\n• Jaringan kabel\n• Peran spesifik operator radio\n• Mekanisme cakupan sinyal\n• Peristiwa gameplay"
+    },
+    courierEvents:[
+      {
+        text:'"Laporan dari kampung sebelah. Pasukan Inggris sedang melakukan penggeledahan. Apa yang harus kita lakukan?"',
+        choices:[
+          {label:"A — Lanjutkan Siaran", effects:"Semangat +15 · Radar +15", morale:15, detection:15, note:"continue"},
+          {label:"B — Hentikan & Bantu Warga", effects:"Semangat -5 · Radar -20", morale:-5, detection:-20, note:"assist"},
+          {label:"C — Pindahkan Pemancar Dulu", effects:"Kehilangan waktu siaran · Radar -10", morale:0, detection:-10, note:"relocate"}
+        ]
+      },
+      {
+        text:'"Kabel di atap timur mulai rusak akibat tembakan. Kita bisa memperbaikinya atau membiarkannya."',
+        choices:[
+          {label:"A — Perbaiki Sekarang", effects:"Radar +10 · Sinyal membaik", morale:5, detection:10, note:"repair"},
+          {label:"B — Biarkan, Fokus Siaran", effects:"Semangat +10 · Radar +5", morale:10, detection:5, note:"ignore"},
+          {label:"C — Matikan Sementara", effects:"Radar -15 · Semangat -10", morale:-10, detection:-15, note:"shutdown"}
+        ]
+      },
+      {
+        text:'"Warga di kampung utara ketakutan dan ragu mendengarkan siaran. Bagaimana sikap kita?"',
+        choices:[
+          {label:"A — Perkuat Siaran", effects:"Semangat +12 · Radar +12", morale:12, detection:12, note:"boost"},
+          {label:"B — Kirim Kurir Penenang", effects:"Semangat +8 · Radar -5", morale:8, detection:-5, note:"courier"},
+          {label:"C — Tunggu dan Amati", effects:"Tidak banyak berubah", morale:2, detection:-2, note:"wait"}
+        ]
+      }
+    ]
+  },
+  en:{
+    menuLocation:"SURABAYA — NOVEMBER 1945",
+    tagline:'"When the guns fall silent, let the voice carry."',
+    btnStart:"START", btnCodex:"HISTORY", btnHowTo:"HOW TO PLAY",
+    statusOff:"STATUS: BROADCAST OFF", statusOn:"STATUS: BROADCASTING",
+    btnPause:"PAUSE", mapLabel:"SURABAYA — NIGHT",
+    warningTriangulation:"WARNING: SIGNAL TRIANGULATION DETECTED",
+    hFrequency:"FREQUENCY", hStatus:"TRANSMISSION STATUS", hObjective:"PRIMARY OBJECTIVE",
+    lblMorale:"MORALE", lblDetection:"RADAR", lblSignal:"SIGNAL",
+    btnBroadcastOn:"START BROADCAST [SPACE]", btnBroadcastOff:"CUT TRANSMISSION [SPACE]",
+    btnRelocate:"RELOCATE [R]", btnMute:"MUTE [M]",
+    voiceSim:"VOICE SOURCE: SIMULATION", voiceReal:"VOICE SOURCE: RECORDING",
+    tutTitle:"OPERATOR TRAINING", btnNext:"NEXT", btnSkip:"SKIP",
+    courierTitle:"URGENT COURIER",
+    pausedTitle:"PAUSED", btnResume:"RESUME", btnMainMenu:"MAIN MENU",
+    howToTitle:"HOW TO PLAY", btnClose:"CLOSE",
+    codexTitle:"HISTORICAL CODEX",
+    codexDisclaimer:"Some gameplay mechanics are fictionalized abstractions designed to communicate the historical importance of radio, morale, communication, and resistance.",
+    bombTitle:"TRIANGULATION COMPLETE", bombText:"Equipment damaged. Part of your network is lost.",
+    btnContinue:"CONTINUE", btnRealHistory:"WHAT WAS REAL?", btnRestart:"PLAY AGAIN",
+    clickAudio:"CLICK TO ENABLE RADIO AUDIO", btnOk:"OK",
+    signalLocked:"SIGNAL LOCKED", signalSearching:"SEARCHING...",
+    objectiveText:"Broadcast to at least 5 neighborhoods while keeping MORALE ≥ 60, before DETECTION reaches 100%.",
+    reachedLabel:"Neighborhoods reached",
+    node:"Neighborhood",
+    introLines:[
+      "SURABAYA","NOVEMBER 1945","",
+      "The city was tense.","","Messages traveled through streets,\nalleys, rooftops and radios.","",
+      "But one thing could travel farther\nthan a messenger:","","A VOICE.","",
+      "Your task is simple.","","Keep the transmission alive."
+    ],
+    tutorialSteps:[
+      "Find the signal. Turn the FREQUENCY dial until it nears the target.",
+      "Lock the frequency. Watch the CRT waveform become stable and bright green.",
+      "Start BROADCASTING. People's morale rises while you're on air.",
+      "Watch the RADAR. The longer you broadcast, the greater the risk of detection.",
+      "Relocate the transmitter before they find you, if radar gets too high.",
+      "Choose carefully when a courier arrives with an urgent report."
+    ],
+    howToBody:`
+      <p><b>OBJECTIVE:</b> Keep Bung Tomo's broadcast alive. Reach at least 5 neighborhoods with MORALE ≥ 60 before RADAR reaches 100%.</p>
+      <p><b>FREQUENCY:</b> Drag the slider so CURRENT nears TARGET. The closer it is, the cleaner the signal and the more stable the waveform.</p>
+      <p><b>BROADCAST:</b> Press SPACE or the START BROADCAST button. While broadcasting, morale rises but so does radar.</p>
+      <p><b>RADAR:</b> If it reaches 100%, your equipment is damaged (bombardment). Press R to relocate and rapidly lower radar.</p>
+      <p><b>COURIER:</b> Random events will ask you to make decisions that change morale and radar.</p>
+      <p><b>CONTROLS:</b> A/D or slider — tuning · SPACE — broadcast on/off · R — relocate · ESC — pause · M — mute · ID/EN buttons — language</p>
+    `,
+    codexEntries:[
+      {tag:"record", title:"Bung Tomo", text:"Sutomo, known as Bung Tomo, is widely associated with radio speeches that became an important source of morale for Surabaya's resistance in November 1945."},
+      {tag:"record", title:"Battle of Surabaya", text:"Major fighting in Surabaya broke out on 10 November 1945, following escalating tension between Indonesian fighters/civilians and Allied/British forces."},
+      {tag:"record", title:"Allied Arrival", text:"Allied forces (including British troops) arrived in Surabaya after Indonesia's Proclamation of Independence, fueling rising tension leading up to November 1945."},
+      {tag:"record", title:"Radio as a Tool of Struggle", text:"Radio was an important communication medium at the time, used to spread information and bolster morale amid a chaotic situation."},
+      {tag:"record", title:"Role of Civilians and Youth", text:"The struggle in Surabaya involved many actors — armed fighters, youth, civilian organizations, and ordinary residents — not the result of one figure alone."},
+      {tag:"abstraction", title:"Frequency & Radar System", text:"The frequency-tuning mechanic, British detection radar, and cable network in this game are gameplay abstractions, not claims that this exact system historically existed."},
+      {tag:"abstraction", title:"The Radio Operator Role", text:"The 'radio operator' character the player controls is a fictional gameplay perspective, representing the many unnamed people who helped spread information."}
+    ],
+    endings:{
+      survives:{title:"ENDING 1 — THE VOICE SURVIVES", body:"The network successfully spread the message to many neighborhoods while keeping risk under control. The operator survived, and the message continued to travel."},
+      flame:{title:"ENDING 2 — THE SIGNAL BECOMES A FLAME", body:"Morale peaked. You sacrificed safety to reach more people. The transmitter was eventually silenced — but the voice had already spread."},
+      silence:{title:"ENDING 3 — SILENCE TO SURVIVE", body:"You repeatedly chose safety. The network survived, but fewer people heard the message."},
+      fallen:{title:"ENDING 4 — THE NETWORK FALLS", body:"Detection reached its maximum before the message spread far enough. The radio station was discovered."}
+    },
+    realHistory:{
+      real:"• Surabaya became a major center of resistance in 1945.\n• Tension escalated sharply before 10 November.\n• Bung Tomo became strongly associated with radio broadcasts that encouraged resistance.\n• Radio and communication played an important role in wartime morale.",
+      abstraction:"• Frequency tuning\n• Radar detection\n• Cable network\n• The specific radio operator role\n• Signal coverage mechanics\n• Gameplay events"
+    },
+    courierEvents:[
+      {
+        text:'"Report from the next neighborhood over. British troops are conducting a search. What should we do?"',
+        choices:[
+          {label:"A — Continue Broadcasting", effects:"Morale +15 · Radar +15", morale:15, detection:15, note:"continue"},
+          {label:"B — Shut Down & Assist", effects:"Morale -5 · Radar -20", morale:-5, detection:-20, note:"assist"},
+          {label:"C — Relocate First", effects:"Lose broadcast time · Radar -10", morale:0, detection:-10, note:"relocate"}
+        ]
+      },
+      {
+        text:'"The cable on the east rooftop is damaged from gunfire. We could repair it or leave it."',
+        choices:[
+          {label:"A — Repair Now", effects:"Radar +10 · Signal improves", morale:5, detection:10, note:"repair"},
+          {label:"B — Leave It, Keep Broadcasting", effects:"Morale +10 · Radar +5", morale:10, detection:5, note:"ignore"},
+          {label:"C — Shut Down Briefly", effects:"Radar -15 · Morale -10", morale:-10, detection:-15, note:"shutdown"}
+        ]
+      },
+      {
+        text:'"Residents in the northern neighborhood are afraid and hesitant to listen. How do we respond?"',
+        choices:[
+          {label:"A — Strengthen the Broadcast", effects:"Morale +12 · Radar +12", morale:12, detection:12, note:"boost"},
+          {label:"B — Send a Reassuring Courier", effects:"Morale +8 · Radar -5", morale:8, detection:-5, note:"courier"},
+          {label:"C — Wait and Observe", effects:"Little changes", morale:2, detection:-2, note:"wait"}
+        ]
+      }
+    ]
+  }
+};
+
+let lang = "id";
+
+/* ---------------------------------------------------------------------
+   AUDIO CONFIGURATION
+--------------------------------------------------------------------- */
+const INTRO_AUDIO_CONFIG = {
+  src: "merdeka.mp3"  // Ganti dengan path file MP3 Anda / Replace with your MP3 file path
+};
+
+/* ---------------------------------------------------------------------
+   2. GAME STATE
+--------------------------------------------------------------------- */
+const gameState = {
+  language:"id",
+  frequency: 500,      // current, 0-1000 scale
+  targetFrequency: 0,
+  signalQuality: 0,    // 0-1
+  morale: 50,
+  detection: 0,
+  broadcasting: false,
+  connectedNodes: [],
+  neighborhoodsReached: 0,
+  civiliansHelped: 0,
+  historicalEntriesUnlocked: [],
+  currentEvent: null,
+  gameTime: 0,
+  score: 0,
+  paused: false,
+  running: false,
+  muted:false,
+  coverageRadius: 0,
+  lastCourierTime: 0,
+  courierIndex: 0,
+  ended:false
+};
+
+const NEIGHBORHOODS = [
+  {id:0, x:0.75, y:0.22, reached:false, hitboxOffset:{x:0.05, y:0}},
+  {id:1, x:0.60, y:0.60, reached:false},
+  {id:2, x:0.65, y:0.75, reached:false},
+  {id:3, x:0.30, y:0.68, reached:false},
+  {id:4, x:0.20, y:0.30, reached:false}
+];
+const RADIO_POS = {x:0.42, y:0.48};
+const BRITISH_HQ = {x:0.92, y:0.08};
+
+/* ---------------------------------------------------------------------
+   3. DOM REFS
+--------------------------------------------------------------------- */
+const $ = id => document.getElementById(id);
+const screens = {
+  menu:$("screen-menu"), intro:$("screen-intro"), game:$("screen-game")
+};
+const overlays = {
+  tutorial:$("overlay-tutorial"), courier:$("overlay-courier"), pause:$("overlay-pause"),
+  howto:$("overlay-howto"), codex:$("overlay-codex"), bombardment:$("overlay-bombardment"),
+  ending:$("overlay-ending"), audioEnable:$("overlay-audio-enable")
+};
+
+function showScreen(name){
+  Object.values(screens).forEach(s=>s.classList.remove("active"));
+  screens[name].classList.add("active");
+}
+function showOverlay(name){ overlays[name].classList.add("active"); }
+function hideOverlay(name){ overlays[name].classList.remove("active"); }
+
+/* ---------------------------------------------------------------------
+   4. LOCALIZATION APPLY
+--------------------------------------------------------------------- */
+function applyLanguage(){
+  const t = translations[lang];
+  document.querySelectorAll("[data-i18n]").forEach(el=>{
+    const key = el.getAttribute("data-i18n");
+    if(t[key] !== undefined) el.textContent = t[key];
+  });
+  $("btn-lang-id").classList.toggle("active", lang==="id");
+  $("btn-lang-en").classList.toggle("active", lang==="en");
+  $("btn-lang-id-game").classList.toggle("active", lang==="id");
+  $("btn-lang-en-game").classList.toggle("active", lang==="en");
+  $("objectiveBox").textContent = t.objectiveText;
+  $("voiceSource").textContent = t.voiceSim;
+  $("statusLine").textContent = gameState.broadcasting ? t.statusOn : t.statusOff;
+  $("broadcastBtn").textContent = gameState.broadcasting ? t.btnBroadcastOff : t.btnBroadcastOn;
+  $("lockStatus").textContent = gameState.signalQuality > 0.85 ? t.signalLocked : (gameState.broadcasting ? t.signalSearching : "");
+  renderHowTo();
+  renderCodex();
+}
+function switchLanguage(newLang){
+  lang = newLang; gameState.language = newLang;
+  applyLanguage();
+}
+
+/* ---------------------------------------------------------------------
+   5. AUDIO SYSTEM
+--------------------------------------------------------------------- */
+let audioCtx=null, noiseSource=null, noiseGain=null, noiseFilter=null;
+let voiceOsc=null, voiceGain=null, voiceFilter=null, voiceLFO=null, voiceLFOGain=null;
+let pingOsc=null, pingGain=null, pingTimer=null;
+let audioReady=false;
+
+// ---- Bung Tomo MP3 chain (shared by cinematic intro AND gameplay broadcast voice) ----
+let mp3Audio=null, mp3Source=null, mp3Filter=null, mp3Gain=null, mp3Analyser=null;
+let mp3Available=false, mp3ChainReady=false;
+
+function initAudio(){
+  if(audioReady) return;
+  try{
+    audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+
+    // ---- noise (static) ----
+    const bufferSize = audioCtx.sampleRate * 2;
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for(let i=0;i<bufferSize;i++) data[i] = Math.random()*2-1;
+    noiseSource = audioCtx.createBufferSource();
+    noiseSource.buffer = buffer; noiseSource.loop = true;
+    noiseFilter = audioCtx.createBiquadFilter();
+    noiseFilter.type="bandpass"; noiseFilter.frequency.value=1800; noiseFilter.Q.value=0.6;
+    noiseGain = audioCtx.createGain(); noiseGain.gain.value=0.0;
+    noiseSource.connect(noiseFilter).connect(noiseGain).connect(audioCtx.destination);
+    noiseSource.start();
+
+    // ---- "voice" placeholder (formant-ish tone) ----
+    voiceOsc = audioCtx.createOscillator(); voiceOsc.type="sawtooth"; voiceOsc.frequency.value=140;
+    voiceFilter = audioCtx.createBiquadFilter(); voiceFilter.type="bandpass"; voiceFilter.frequency.value=900; voiceFilter.Q.value=4;
+    voiceGain = audioCtx.createGain(); voiceGain.gain.value=0.0;
+    voiceLFO = audioCtx.createOscillator(); voiceLFO.frequency.value=3.2;
+    voiceLFOGain = audioCtx.createGain(); voiceLFOGain.gain.value=350;
+    voiceLFO.connect(voiceLFOGain).connect(voiceFilter.frequency);
+    voiceOsc.connect(voiceFilter).connect(voiceGain).connect(audioCtx.destination);
+    voiceOsc.start(); voiceLFO.start();
+
+    // ---- radar ping ----
+    pingGain = audioCtx.createGain(); pingGain.gain.value=0.0;
+    pingGain.connect(audioCtx.destination);
+
+    audioReady = true;
+  }catch(e){
+    console.warn("Audio init failed", e);
+    audioReady=false;
+  }
+
+  // Build the Bung Tomo MP3 chain (shared between intro cinematic and gameplay).
+  initMp3Chain();
+}
+
+/* ---- Bung Tomo MP3 chain setup (single audio element/source, reused everywhere) ---- */
+function initMp3Chain(){
+  if(mp3ChainReady || !audioReady) return;
+  try{
+    mp3Audio = new Audio();
+    mp3Audio.src = INTRO_AUDIO_CONFIG.src;
+    mp3Audio.loop = true;          // loops through the full speech continuously
+    mp3Audio.preload = "auto";
+    mp3Audio.crossOrigin = "anonymous";
+    mp3Audio.volume = 1.0;         // actual loudness is controlled by mp3Gain, not element volume
+
+    mp3Audio.addEventListener("error", ()=>{
+      mp3Available = false;
+      const el = $("voiceSource");
+      if(el) el.textContent = translations[lang].voiceSim;
+    });
+    mp3Audio.addEventListener("canplaythrough", ()=>{ mp3Available = true; }, {once:true});
+
+    mp3Source = audioCtx.createMediaElementSource(mp3Audio);
+    mp3Filter = audioCtx.createBiquadFilter();
+    mp3Filter.type = "lowpass";
+    mp3Filter.frequency.value = 600; // muffled by default until tuned
+    mp3Filter.Q.value = 0.7;
+    mp3Gain = audioCtx.createGain();
+    mp3Gain.gain.value = 0.0;
+    mp3Analyser = audioCtx.createAnalyser();
+    mp3Analyser.fftSize = 2048;
+
+    mp3Source.connect(mp3Filter).connect(mp3Gain).connect(audioCtx.destination);
+    mp3Source.connect(mp3Analyser); // parallel tap for waveform visualization only
+
+    mp3ChainReady = true;
+  }catch(e){
+    console.warn("MP3 chain init failed", e);
+    mp3Available = false;
+  }
+}
+
+function playPing(){
+  if(!audioReady || gameState.muted) return;
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.type="sine"; osc.frequency.value=880;
+  g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+  g.gain.linearRampToValueAtTime(0.18, audioCtx.currentTime+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.25);
+  osc.connect(g).connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime+0.3);
+}
+
+function schedulePing(){
+  if(pingTimer) clearTimeout(pingTimer);
+  const det = gameState.detection/100;
+  const interval = Math.max(180, 1400 - det*1200); // faster as detection rises
+  pingTimer = setTimeout(()=>{
+    playPing();
+    schedulePing();
+  }, interval);
+}
+
+function updateAudioParams(){
+  if(!audioReady) return;
+  const q = gameState.signalQuality;
+  const broadcasting = gameState.broadcasting;
+  const muted = gameState.muted;
+
+  // Old procedural noise kept only as a faint atmospheric hiss (no longer the dominant sound).
+  const noiseTarget = muted ? 0 : (broadcasting ? (1-q)*0.09 + 0.01 : 0.02);
+  // The oscillator "voice" placeholder is retired now that the real MP3 drives the voice.
+  const voiceTarget = 0;
+  noiseGain.gain.setTargetAtTime(noiseTarget, audioCtx.currentTime, 0.15);
+  voiceGain.gain.setTargetAtTime(voiceTarget, audioCtx.currentTime, 0.15);
+  noiseFilter.frequency.setTargetAtTime(1200 + (1-q)*2500, audioCtx.currentTime, 0.2);
+  voiceLFO.frequency.setTargetAtTime(2 + q*2, audioCtx.currentTime, 0.3);
+
+  // Bung Tomo MP3: signalQuality drives clarity (frequency/gameplay tuning mechanic).
+  if(mp3ChainReady && mp3Available){
+    let mp3GainTarget, mp3CutoffTarget;
+    if(muted || !broadcasting){
+      mp3GainTarget = 0;
+      mp3CutoffTarget = 500;
+    } else if(q < 0.3){                 // 0-30%: very distorted / muffled
+      mp3GainTarget = 0.12 + q*0.3;
+      mp3CutoffTarget = 350 + q*900;
+    } else if(q < 0.7){                 // 30-70%: partially understandable
+      mp3GainTarget = 0.25 + q*0.4;
+      mp3CutoffTarget = 700 + q*2400;
+    } else if(q < 0.9){                 // 70-90%: mostly clear
+      mp3GainTarget = 0.55 + q*0.35;
+      mp3CutoffTarget = 2500 + q*5000;
+    } else {                            // 90-100%: clear voice (locked)
+      mp3GainTarget = 0.85;
+      mp3CutoffTarget = 12000;
+    }
+    mp3Gain.gain.setTargetAtTime(mp3GainTarget, audioCtx.currentTime, 0.2);
+    mp3Filter.frequency.setTargetAtTime(mp3CutoffTarget, audioCtx.currentTime, 0.25);
+
+    if(mp3Audio && mp3Audio.paused && broadcasting){
+      mp3Audio.play().catch(()=>{ /* ignore; will retry on next broadcast toggle */ });
+    }
+  }
+}
+
+function stopAudio(){
+  if(!audioReady) return;
+  if(pingTimer) clearTimeout(pingTimer);
+  noiseGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+  voiceGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+  if(mp3ChainReady) mp3Gain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+}
+
+/* ---------------------------------------------------------------------
+   6. FREQUENCY / SIGNAL LOGIC
+--------------------------------------------------------------------- */
+function newTargetFrequency(){
+  gameState.targetFrequency = 150 + Math.random()*700;
+}
+
+function updateSignalQuality(){
+  const diff = Math.abs(gameState.frequency - gameState.targetFrequency);
+  const quality = Math.max(0, 1 - diff/220);
+  gameState.signalQuality = quality;
+  return quality;
+}
+
+// Frequency drift system - target frequency shifts randomly based on signal quality
+let lastDriftTime = 0;
+function updateFrequencyDrift(dt){
+  if(!gameState.broadcasting) return;
+  
+  const q = gameState.signalQuality;
+  let driftInterval, driftAmount;
+  
+  // Higher signal quality = more frequent and larger drifts (instability)
+  if(q > 0.7){
+    // Very high quality: very unstable
+    driftInterval = 1.5;  // Every 1.5 seconds
+    driftAmount = 50;      // Large drift: -25 to +25
+  } else if(q > 0.5){
+    // Good quality: moderately unstable
+    driftInterval = 2.0;  // Every 2 seconds
+    driftAmount = 40;      // Medium drift: -20 to +20
+  } else if(q > 0.3){
+    // Medium quality: some instability
+    driftInterval = 3.0;  // Every 3 seconds
+    driftAmount = 25;      // Small drift: -12.5 to +12.5
+  } else {
+    // Low quality: minimal drift
+    driftInterval = 5.0;  // Every 5 seconds
+    driftAmount = 15;      // Very small drift: -7.5 to +7.5
+  }
+  
+  lastDriftTime += dt;
+  if(lastDriftTime > driftInterval){
+    lastDriftTime = 0;
+    // Random drift left or right
+    const drift = (Math.random() - 0.5) * driftAmount;
+    gameState.targetFrequency = clamp(gameState.targetFrequency + drift, 50, 950);
+  }
+}
+
+/* ---------------------------------------------------------------------
+   7. WAVEFORM RENDER
+--------------------------------------------------------------------- */
+const waveCanvas = $("waveCanvas");
+const waveCtx = waveCanvas.getContext("2d");
+let wavePhase=0;
+function resizeWaveCanvas(){
+  waveCanvas.width = waveCanvas.clientWidth * devicePixelRatio;
+  waveCanvas.height = waveCanvas.clientHeight * devicePixelRatio;
+}
+function renderWave(){
+  const w=waveCanvas.width, h=waveCanvas.height;
+  waveCtx.clearRect(0,0,w,h);
+  waveCtx.strokeStyle = gameState.signalQuality>0.85 ? "#39FF14" : "#2a7a12";
+  waveCtx.lineWidth = 2*devicePixelRatio;
+  waveCtx.beginPath();
+  const noiseAmt = (1-gameState.signalQuality) * (h*0.35);
+  for(let x=0;x<w;x+=2){
+    const t = x/w*Math.PI*8 + wavePhase;
+    let y = h/2 + Math.sin(t)*(h*0.28)*(0.4+gameState.signalQuality*0.6);
+    y += (Math.random()-0.5)*noiseAmt* (gameState.broadcasting?1:0.4);
+    if(x===0) waveCtx.moveTo(x,y); else waveCtx.lineTo(x,y);
+  }
+  waveCtx.stroke();
+  if(gameState.signalQuality>0.85){
+    waveCtx.shadowColor="#39FF14"; waveCtx.shadowBlur=12*devicePixelRatio;
+    waveCtx.stroke();
+    waveCtx.shadowBlur=0;
+  }
+  wavePhase += 0.08 + gameState.signalQuality*0.05;
+}
+
+/* ---------------------------------------------------------------------
+   8. MAP RENDER
+--------------------------------------------------------------------- */
+const mapCanvas = $("mapCanvas");
+const mapCtx = mapCanvas.getContext("2d");
+function resizeMapCanvas(){
+  mapCanvas.width = mapCanvas.clientWidth * devicePixelRatio;
+  mapCanvas.height = mapCanvas.clientHeight * devicePixelRatio;
+}
+let rippleTime=0;
+
+function renderMap(){
+  const w=mapCanvas.width, h=mapCanvas.height;
+  mapCtx.fillStyle="#060a06";
+  mapCtx.fillRect(0,0,w,h);
+
+  // faint building grid
+  mapCtx.strokeStyle="rgba(57,255,20,0.06)";
+  mapCtx.lineWidth=1;
+  const gridSize = 34*devicePixelRatio;
+  for(let x=0;x<w;x+=gridSize){
+    mapCtx.beginPath(); mapCtx.moveTo(x,0); mapCtx.lineTo(x,h); mapCtx.stroke();
+  }
+  for(let y=0;y<h;y+=gridSize){
+    mapCtx.beginPath(); mapCtx.moveTo(0,y); mapCtx.lineTo(w,y); mapCtx.stroke();
+  }
+  // scattered blocks (buildings)
+  mapCtx.fillStyle="rgba(20,30,20,0.6)";
+  for(let i=0;i<26;i++){
+    const bx = (i*53%100)/100*w, by=(i*97%100)/100*h;
+    mapCtx.fillRect(bx, by, gridSize*0.6, gridSize*0.6);
+  }
+
+  // British HQ + radar
+  const hqx = BRITISH_HQ.x*w, hqy = BRITISH_HQ.y*h;
+  const radarRadius = (gameState.detection/100) * (Math.min(w,h)*0.85);
+  const pulse = 1 + Math.sin(rippleTime*(1+gameState.detection/40))*0.04;
+  mapCtx.beginPath();
+  mapCtx.arc(hqx,hqy,radarRadius*pulse,0,Math.PI*2);
+  mapCtx.strokeStyle="rgba(255,85,85,"+(0.25+gameState.detection/200)+")";
+  mapCtx.lineWidth=2*devicePixelRatio;
+  mapCtx.stroke();
+  mapCtx.fillStyle="rgba(255,85,85,0.05)";
+  mapCtx.fill();
+  mapCtx.fillStyle="#FF5555";
+  mapCtx.beginPath(); mapCtx.arc(hqx,hqy,5*devicePixelRatio,0,Math.PI*2); mapCtx.fill();
+
+  // radio position + coverage ripple
+  const rx = RADIO_POS.x*w, ry = RADIO_POS.y*h;
+  if(gameState.broadcasting){
+    for(let i=0;i<3;i++){
+      const rr = ((rippleTime*40 + i*60) % 200) * devicePixelRatio * (0.5+gameState.signalQuality);
+      mapCtx.beginPath();
+      mapCtx.arc(rx,ry,rr,0,Math.PI*2);
+      mapCtx.strokeStyle = "rgba(57,255,20,"+Math.max(0,(0.5-rr/(240*devicePixelRatio)))+")";
+      mapCtx.lineWidth=2*devicePixelRatio;
+      mapCtx.stroke();
+    }
+  }
+  mapCtx.beginPath();
+  mapCtx.arc(rx,ry, gameState.coverageRadius*Math.min(w,h), 0, Math.PI*2);
+  mapCtx.fillStyle="rgba(57,255,20,0.05)";
+  mapCtx.fill();
+
+  mapCtx.fillStyle="#39FF14";
+  mapCtx.beginPath(); mapCtx.arc(rx,ry,6*devicePixelRatio,0,Math.PI*2); mapCtx.fill();
+  mapCtx.font=(10*devicePixelRatio)+"px monospace";
+  mapCtx.fillText("TX", rx+8*devicePixelRatio, ry-8*devicePixelRatio);
+
+  // neighborhoods
+  const t = translations[lang];
+  NEIGHBORHOODS.forEach((n,i)=>{
+    const nx=n.x*w, ny=n.y*h;
+    mapCtx.beginPath();
+    mapCtx.arc(nx,ny,7*devicePixelRatio,0,Math.PI*2);
+    mapCtx.fillStyle = n.reached ? "#39FF14" : "#3a5a30";
+    mapCtx.fill();
+    mapCtx.strokeStyle = n.reached ? "#aaffaa" : "#1c2b17";
+    mapCtx.stroke();
+    mapCtx.fillStyle="#8ad678";
+    mapCtx.font=(9*devicePixelRatio)+"px monospace";
+    mapCtx.fillText((t.node)+" "+(i+1), nx+9*devicePixelRatio, ny+3*devicePixelRatio);
+  });
+
+  rippleTime += 0.03;
+}
+
+/* ---------------------------------------------------------------------
+   9. GAME LOOP
+--------------------------------------------------------------------- */
+let lastFrame=performance.now();
+function gameLoop(now){
+  const dt = Math.min(0.05, (now-lastFrame)/1000);
+  lastFrame = now;
+  if(gameState.running && !gameState.paused && !gameState.ended){
+    updateGame(dt);
+  }
+  renderWave();
+  renderMap();
+  requestAnimationFrame(gameLoop);
+}
+
+function updateGame(dt){
+  gameState.gameTime += dt;
+  updateSignalQuality();
+  updateFrequencyDrift(dt);
+  const q = gameState.signalQuality;
+
+    if(gameState.broadcasting){
+        // Pertumbuhan moral dan deteksi lebih lambat
+        gameState.morale = clamp(gameState.morale + dt*(0.6 + q*1.2), 0, 100);   // 1.2→0.6, 2.5→1.2
+        gameState.detection = clamp(gameState.detection + dt*(0.8 + q*0.8), 0, 100); // 1.5→0.8, 1.5→0.8
+        // Jangkauan tumbuh lebih lambat dan hanya jika kualitas sangat baik
+        if(q>0.65){  // naikkan ambang batas dari 0.55 ke 0.65 agar lebih sulit
+            gameState.coverageRadius = clamp(gameState.coverageRadius + dt*0.012, 0, 0.9); // 0.025→0.012
+        }
+    } else {
+        // Penurunan moral juga diperlambat
+        gameState.morale = clamp(gameState.morale - dt*0.3, 0, 100);   // 0.6→0.3
+        // Deteksi turun lebih lambat agar tidak cepat aman
+        gameState.detection = clamp(gameState.detection - dt*2.0, 0, 100); // 4→2
+        // Jangkauan menyusut lebih pelan
+        gameState.coverageRadius = clamp(gameState.coverageRadius - dt*0.01, 0, 0.9); // 0.02→0.01
+    }
+
+  // check neighborhoods reached
+  NEIGHBORHOODS.forEach(n=>{
+    if(!n.reached){
+      // Use hitboxOffset if available for custom hitbox positioning
+      const hitboxX = n.hitboxOffset ? n.x + n.hitboxOffset.x : n.x;
+      const hitboxY = n.hitboxOffset ? n.y + n.hitboxOffset.y : n.y;
+      const dx = hitboxX-RADIO_POS.x, dy = hitboxY-RADIO_POS.y;
+      const dist = Math.sqrt(dx*dx+dy*dy);
+      // Ensure coverage radius actually reaches the neighborhood hitbox
+      if(gameState.coverageRadius >= dist){
+        n.reached = true;
+        gameState.neighborhoodsReached++;
+        gameState.morale = clamp(gameState.morale+8,0,100);
+        unlockCodexEntry();
+      }
+    }
+  });
+
+  updateAudioParams();
+  updateHUD();
+
+  // warning banner
+  const warn = $("warningBanner");
+  warn.classList.toggle("show", gameState.detection>=70);
+
+  // courier event trigger (longer interval for extended gameplay)
+  if(gameState.gameTime - gameState.lastCourierTime > 40 && !gameState.currentEvent && gameState.neighborhoodsReached < 5){
+    triggerCourierEvent();
+  }
+
+  // bombardment
+  if(gameState.detection>=100){
+    triggerBombardment();
+    return;
+  }
+
+  checkWinCondition();
+}
+
+function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
+
+function updateHUD(){
+  $("freqDisplay").textContent =
+    "T:"+gameState.targetFrequency.toFixed(2)+"  C:"+gameState.frequency.toFixed(2)+" MHz";
+  $("moraleBar").style.width = gameState.morale+"%";
+  $("moraleVal").textContent = Math.round(gameState.morale)+"%";
+  $("detectionBar").style.width = gameState.detection+"%";
+  $("detectionVal").textContent = Math.round(gameState.detection)+"%";
+  $("signalBar").style.width = (gameState.signalQuality*100)+"%";
+  $("signalVal").textContent = Math.round(gameState.signalQuality*100)+"%";
+  $("nodeCountDisplay").textContent = gameState.neighborhoodsReached+"/5";
+  const mins = Math.floor(gameState.gameTime/60).toString().padStart(2,"0");
+  const secs = Math.floor(gameState.gameTime%60).toString().padStart(2,"0");
+  $("timeDisplay").textContent = mins+":"+secs;
+
+  const t = translations[lang];
+  const lockEl = $("lockStatus");
+  if(gameState.signalQuality>0.85){
+    lockEl.textContent = t.signalLocked; lockEl.classList.add("locked");
+  } else {
+    lockEl.textContent = gameState.broadcasting ? t.signalSearching : "";
+    lockEl.classList.remove("locked");
+  }
+}
+
+/* ---------------------------------------------------------------------
+   10. COURIER / MORAL DILEMMA
+--------------------------------------------------------------------- */
+function triggerCourierEvent(){
+  const t = translations[lang];
+  const events = t.courierEvents;
+  const ev = events[gameState.courierIndex % events.length];
+  gameState.courierIndex++;
+  gameState.currentEvent = ev;
+  gameState.lastCourierTime = gameState.gameTime;
+  gameState.paused = true;
+
+  $("courierText").textContent = ev.text;
+  const choicesEl = $("courierChoices");
+  choicesEl.innerHTML="";
+  ev.choices.forEach(choice=>{
+    const btn = document.createElement("button");
+    btn.className="choice-btn";
+    btn.innerHTML = choice.label + '<span class="choice-effects">'+choice.effects+'</span>';
+    btn.onclick = ()=>resolveCourierChoice(choice);
+    choicesEl.appendChild(btn);
+  });
+  showOverlay("courier");
+}
+
+function resolveCourierChoice(choice){
+  gameState.morale = clamp(gameState.morale + choice.morale, 0, 100);
+  gameState.detection = clamp(gameState.detection + choice.detection, 0, 100);
+  if(choice.note==="assist" || choice.note==="courier") gameState.civiliansHelped++;
+  gameState.currentEvent=null;
+  gameState.paused=false;
+  hideOverlay("courier");
+}
+
+/* ---------------------------------------------------------------------
+   11. BOMBARDMENT EVENT
+--------------------------------------------------------------------- */
+function triggerBombardment(){
+  gameState.paused = true;
+  const app = $("app");
+  app.classList.add("shake");
+  $("redFlash").classList.add("flash");
+  document.body.classList.add("glitch");
+  playPing();
+  setTimeout(()=>{
+    app.classList.remove("shake");
+    document.body.classList.remove("glitch");
+  }, 500);
+  // damage: reduce coverage, reset detection partially
+  gameState.coverageRadius *= 0.4;
+  gameState.detection = 60;
+  gameState.civiliansHelped = Math.max(0, gameState.civiliansHelped-1);
+  showOverlay("bombardment");
+}
+
+$("btn-bomb-continue").onclick = ()=>{
+  hideOverlay("bombardment");
+  gameState.paused=false;
+  if(gameState.morale <= 15){
+    endGame("fallen");
+  }
+};
+
+/* ---------------------------------------------------------------------
+   12. WIN / END CONDITIONS
+--------------------------------------------------------------------- */
+function checkWinCondition(){
+  if(gameState.neighborhoodsReached>=5 && gameState.morale>=60){
+    let ending = "survives";
+    if(gameState.detection>=75) ending="flame";
+    endGame(ending);
+  } else if(gameState.neighborhoodsReached>=5 && gameState.morale<60){
+    endGame("silence");
+  }
+}
+
+function computeScore(){
+  const s = gameState.neighborhoodsReached*15
+    + gameState.morale*0.8
+    - gameState.detection*0.3
+    + gameState.civiliansHelped*10
+    + Math.min(gameState.gameTime,300)*0.2;
+  gameState.score = Math.round(Math.max(0,s));
+  return gameState.score;
+}
+function rankFromScore(score){
+  if(score>=140) return "S";
+  if(score>=110) return "A";
+  if(score>=80) return "B";
+  if(score>=50) return "C";
+  return "D";
+}
+
+function markPerjuanganProgress(id){
+  try{
+    var key = "perjuangan_v2_progress";
+    var p = JSON.parse(localStorage.getItem(key) || '{"completed":[]}');
+    if(p.completed.indexOf(id) === -1) p.completed.push(id);
+    localStorage.setItem(key, JSON.stringify(p));
+  }catch(e){}
+}
+
+function endGame(key){
+  if(gameState.ended) return;
+  gameState.ended = true;
+  gameState.running = false;
+  // Mark Surabaya mission complete for main map progress (any ending counts as played-through)
+  if(key === "survives" || key === "flame" || key === "silence"){
+    markPerjuanganProgress("surabaya");
+  }
+  
+  // Stop audio when game ends
+  stopAudio();
+  
+  const t = translations[lang];
+  const ending = t.endings[key];
+  $("endingTitle").textContent = ending.title;
+  $("endingBody").textContent = ending.body;
+  const score = computeScore();
+  const rank = rankFromScore(score);
+  $("endingRank").textContent = rank;
+  $("endingScore").innerHTML =
+    (lang==="id"?"Kampung terjangkau":"Neighborhoods reached")+": "+gameState.neighborhoodsReached+"/5<br>"+
+    (lang==="id"?"Semangat":"Morale")+": "+Math.round(gameState.morale)+"%<br>"+
+    (lang==="id"?"Radar":"Detection")+": "+Math.round(gameState.detection)+"%<br>"+
+    (lang==="id"?"Warga dibantu":"Civilians assisted")+": "+gameState.civiliansHelped+"<br>"+
+    (lang==="id"?"Skor Perlawanan":"Resistance Score")+": "+score;
+  showOverlay("ending");
+}
+
+/* ---------------------------------------------------------------------
+   13. CODEX
+--------------------------------------------------------------------- */
+function unlockCodexEntry(){
+  const idx = gameState.historicalEntriesUnlocked.length;
+  const entries = translations[lang].codexEntries;
+  if(idx < entries.length){
+    gameState.historicalEntriesUnlocked.push(idx);
+  }
+}
+function renderCodex(){
+  const t = translations[lang];
+  const body = $("codexBody");
+  body.innerHTML="";
+  t.codexEntries.forEach((entry,i)=>{
+    const unlocked = i===0 || gameState.historicalEntriesUnlocked.includes(i) || gameState.historicalEntriesUnlocked.length===0;
+    const div = document.createElement("div");
+    div.className="codex-entry";
+    const tagLabel = entry.tag==="record" ? (lang==="id"?"REKAM SEJARAH":"HISTORICAL RECORD") : (lang==="id"?"ABSTRAKSI GAME":"GAME ABSTRACTION");
+    div.innerHTML = '<span class="codex-tag '+entry.tag+'">'+tagLabel+'</span><br><b>'+entry.title+'</b><p>'+entry.text+'</p>';
+    body.appendChild(div);
+  });
+}
+function renderHowTo(){
+  $("howToBody").innerHTML = translations[lang].howToBody;
+}
+
+/* ---------------------------------------------------------------------
+   14. TUTORIAL
+--------------------------------------------------------------------- */
+let tutStep=0;
+function startTutorial(){
+  tutStep=0;
+  showTutorialStep();
+  showOverlay("tutorial");
+}
+function showTutorialStep(){
+  const steps = translations[lang].tutorialSteps;
+  $("tutStepText").textContent = "["+(tutStep+1)+"/"+steps.length+"] "+steps[tutStep];
+}
+$("btn-tut-next").onclick = ()=>{
+  tutStep++;
+  const steps = translations[lang].tutorialSteps;
+  if(tutStep>=steps.length){
+    hideOverlay("tutorial");
+    beginGameplay();
+  } else {
+    showTutorialStep();
+  }
+};
+$("btn-tut-skip").onclick = ()=>{
+  hideOverlay("tutorial");
+  beginGameplay();
+};
+
+/* ---------------------------------------------------------------------
+   15. RESET / START
+--------------------------------------------------------------------- */
+function resetGameState(){
+  gameState.frequency=500;
+  newTargetFrequency();
+  gameState.signalQuality=0;
+  gameState.morale=50;
+  gameState.detection=0;
+  gameState.broadcasting=false;
+  gameState.connectedNodes=[];
+  gameState.neighborhoodsReached=0;
+  gameState.civiliansHelped=0;
+  gameState.historicalEntriesUnlocked=[];
+  gameState.currentEvent=null;
+  gameState.gameTime=0;
+  gameState.score=0;
+  gameState.paused=false;
+  gameState.running=false;
+  gameState.coverageRadius=0;
+  gameState.lastCourierTime=0;
+  gameState.courierIndex=0;
+  gameState.ended=false;
+  NEIGHBORHOODS.forEach(n=>n.reached=false);
+  $("freqSlider").value=500;
+}
+
+function playIntroThenGame(){
+  showScreen("intro");
+  const lines = translations[lang].introLines;
+  const el = $("introText");
+  el.textContent="";
+  let i=0;
+  function next(){
+    if(i>=lines.length){
+      setTimeout(()=>{
+        showScreen("game");
+        resizeMapCanvas();
+        resizeWaveCanvas();
+        startTutorial();
+      }, 700);
+      return;
+    }
+    el.textContent += (i>0?"\n":"") + lines[i];
+    i++;
+    setTimeout(next, lines[i-1]===""?250:900);
+  }
+  next();
+}
+
+function beginGameplay(){
+  gameState.running=true;
+  schedulePing();
+}
+
+/* ---------------------------------------------------------------------
+   16. EVENT LISTENERS
+--------------------------------------------------------------------- */
+$("btn-lang-id").onclick=()=>switchLanguage("id");
+$("btn-lang-en").onclick=()=>switchLanguage("en");
+$("btn-lang-id-game").onclick=()=>switchLanguage("id");
+$("btn-lang-en-game").onclick=()=>switchLanguage("en");
+
+$("btn-start").onclick=()=>{
+  if(!audioReady){
+    showOverlay("audioEnable");
+  } else {
+    resetGameState();
+    playIntroThenGame();
+  }
+};
+$("btn-enable-audio").onclick=()=>{
+  initAudio();
+  hideOverlay("audioEnable");
+  resetGameState();
+  playIntroThenGame();
+};
+$("btn-codex").onclick=()=>{ renderCodex(); showOverlay("codex"); };
+$("btn-close-codex").onclick=()=>hideOverlay("codex");
+$("btn-howto").onclick=()=>{ renderHowTo(); showOverlay("howto"); };
+$("btn-close-howto").onclick=()=>hideOverlay("howto");
+
+$("btn-pause").onclick=()=>togglePause();
+$("btn-resume").onclick=()=>togglePause();
+$("btn-pause-howto").onclick=()=>{ renderHowTo(); showOverlay("howto"); };
+$("btn-pause-codex").onclick=()=>{ renderCodex(); showOverlay("codex"); };
+$("btn-pause-menu").onclick=()=>{ window.location.href = "index.html"; };
+
+function togglePause(){
+  if(!gameState.running || gameState.ended) return;
+  gameState.paused = !gameState.paused;
+  if(gameState.paused) showOverlay("pause"); else hideOverlay("pause");
+}
+
+$("broadcastBtn").onclick=()=>toggleBroadcast();
+function toggleBroadcast(){
+  if(!gameState.running || gameState.paused || gameState.ended) return;
+  gameState.broadcasting = !gameState.broadcasting;
+  const t = translations[lang];
+  $("broadcastBtn").textContent = gameState.broadcasting ? t.btnBroadcastOff : t.btnBroadcastOn;
+  $("broadcastBtn").classList.toggle("on", gameState.broadcasting);
+  $("statusLine").textContent = gameState.broadcasting ? t.statusOn : t.statusOff;
+}
+
+$("btn-relocate").onclick=()=>relocate();
+function relocate(){
+  if(!gameState.running || gameState.paused || gameState.ended) return;
+  gameState.detection = clamp(gameState.detection-25,0,100);
+  gameState.broadcasting=false;
+  const t = translations[lang];
+  $("broadcastBtn").textContent = t.btnBroadcastOn;
+  $("broadcastBtn").classList.remove("on");
+  $("statusLine").textContent = t.statusOff;
+  newTargetFrequency();
+}
+
+$("btn-mute").onclick=()=>{
+  gameState.muted = !gameState.muted;
+};
+
+$("freqSlider").oninput = (e)=>{
+  gameState.frequency = parseFloat(e.target.value);
+};
+
+document.addEventListener("keydown",(e)=>{
+  if(!gameState.running) return;
+  if(e.code==="Space"){ e.preventDefault(); toggleBroadcast(); }
+  if(e.key==="r"||e.key==="R"){ relocate(); }
+  if(e.key==="m"||e.key==="M"){ gameState.muted=!gameState.muted; }
+  if(e.key==="l"||e.key==="L"){ switchLanguage(lang==="id"?"en":"id"); }
+  if(e.key==="Escape"){ togglePause(); }
+  if(e.key==="a"||e.key==="A"){ gameState.frequency=clamp(gameState.frequency-6,0,1000); $("freqSlider").value=gameState.frequency; }
+  if(e.key==="d"||e.key==="D"){ gameState.frequency=clamp(gameState.frequency+6,0,1000); $("freqSlider").value=gameState.frequency; }
+});
+
+$("btn-ending-history").onclick=()=>{
+  const t=translations[lang];
+  alert(
+    (lang==="id"?"SEJARAH NYATA":"REAL HISTORY")+"\n\n"+t.realHistory.real+
+    "\n\n"+(lang==="id"?"ABSTRAKSI GAME":"GAME ABSTRACTION")+"\n\n"+t.realHistory.abstraction
+  );
+};
+$("btn-restart").onclick=()=>{
+  hideOverlay("ending");
+  resetGameState();
+  playIntroThenGame();
+};
+$("btn-ending-menu").onclick=()=>{
+  window.location.href = "index.html";
+};
+
+window.addEventListener("resize", ()=>{ resizeMapCanvas(); resizeWaveCanvas(); });
+
+/* ---------------------------------------------------------------------
+   17. CINEMATIC INTRO WAVE ANIMATION
+--------------------------------------------------------------------- */
+let introWaveCtx = null;
+let introWaveCanvas = null;
+let introWavePhase = 0;
+let introWaveTime = 0;
+let introWaveRunning = false;
+let introWaveFrameId = null;
+
+function initIntroWave(){
+  introWaveCanvas = $("introWaveCanvas");
+  introWaveCtx = introWaveCanvas.getContext("2d");
+  resizeIntroWaveCanvas();
+}
+
+function resizeIntroWaveCanvas(){
+  if(!introWaveCanvas) return;
+  introWaveCanvas.width = window.innerWidth * devicePixelRatio;
+  introWaveCanvas.height = window.innerHeight * devicePixelRatio;
+}
+
+function renderIntroWave(){
+  if(!introWaveRunning || !introWaveCtx) return;
+  
+  const w = introWaveCanvas.width;
+  const h = introWaveCanvas.height;
+  
+  // Clear with fade effect
+  introWaveCtx.fillStyle = "rgba(10, 10, 10, 0.1)";
+  introWaveCtx.fillRect(0, 0, w, h);
+  
+  // Draw expanding radio waves
+  introWaveTime += 0.03;
+  const centerX = w / 2;
+  const centerY = h / 2;
+  
+  for(let i = 0; i < 5; i++){
+    const offset = i * 0.8;
+    const radius = ((introWaveTime * 100 + offset * 80) % (Math.min(w, h) * 0.6)) * devicePixelRatio;
+    const alpha = Math.max(0, 1 - radius / (Math.min(w, h) * 0.4));
+    
+    introWaveCtx.beginPath();
+    introWaveCtx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    introWaveCtx.strokeStyle = `rgba(57, 255, 20, ${alpha * 0.6})`;
+    introWaveCtx.lineWidth = 2 * devicePixelRatio;
+    introWaveCtx.stroke();
+  }
+  
+  // Draw noise/static
+  for(let i = 0; i < 50; i++){
+    const x = Math.random() * w;
+    const y = Math.random() * h;
+    const size = Math.random() * 3 * devicePixelRatio;
+    introWaveCtx.fillStyle = `rgba(57, 255, 20, ${Math.random() * 0.3})`;
+    introWaveCtx.fillRect(x, y, size, size);
+  }
+  
+  introWaveFrameId = requestAnimationFrame(renderIntroWave);
+}
+
+function playCinematicIntro(){
+  // Hide entry gate
+  $("entry-gate").classList.add("hidden");
+  
+  // Show intro wave layer
+  $("introWaveLayer").classList.add("active");
+  
+  // Initialize and start wave animation
+  initIntroWave();
+  introWaveRunning = true;
+  introWaveTime = 0;
+  renderIntroWave();
+  
+  // Show climax text after 2 seconds
+  setTimeout(() => {
+    const climaxText = $("introClimaxText");
+    climaxText.textContent = "SUARA PERLAWANAN";
+    climaxText.classList.add("show");
+    
+    // Add shake effect
+    setTimeout(() => {
+      $("introWaveLayer").classList.add("shake");
+    }, 500);
+  }, 2000);
+  
+  // End animation and show menu after 4.5 seconds
+  setTimeout(() => {
+    introWaveRunning = false;
+    if(introWaveFrameId) cancelAnimationFrame(introWaveFrameId);
+    
+    $("introWaveLayer").classList.remove("active");
+    $("introWaveLayer").classList.remove("shake");
+    $("introClimaxText").classList.remove("show");
+    
+    // Show main menu
+    showScreen("menu");
+  }, 4500);
+}
+
+/* ---------------------------------------------------------------------
+   18. INIT
+--------------------------------------------------------------------- */
+function init(){
+  resizeMapCanvas();
+  resizeWaveCanvas();
+  newTargetFrequency();
+  applyLanguage();
+  requestAnimationFrame(gameLoop);
+  
+  // Bind entry gate button
+  $("entryGateBtn").onclick = () => {
+    initAudio();
+    playCinematicIntro();
+  };
+}
+init();
+</script>
+</body>
+</html>
