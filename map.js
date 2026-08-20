@@ -27,14 +27,9 @@ PJ.MapController = (function () {
     try {
       const raw = localStorage.getItem(PJ.STORAGE_KEY);
       if (!raw) return new Set();
-      const data = JSON.parse(raw);
-      // Support both formats:
-      //   ["sumpah-pemuda", "proklamasi"]
-      //   { "completed": ["sumpah-pemuda", "proklamasi"] }
-      let arr = [];
-      if (Array.isArray(data)) arr = data;
-      else if (data && Array.isArray(data.completed)) arr = data.completed;
-      return new Set(arr.filter((x) => typeof x === "string"));
+      const arr = JSON.parse(raw);
+      if (!Array.isArray(arr)) return new Set();
+      return new Set(arr);
     } catch (e) {
       console.warn("PERJUANGAN: gagal membaca progres, mulai baru.", e);
       return new Set();
@@ -43,7 +38,6 @@ PJ.MapController = (function () {
 
   function saveProgress() {
     try {
-      // Always save as plain array (canonical format)
       localStorage.setItem(PJ.STORAGE_KEY, JSON.stringify(Array.from(progress)));
     } catch (e) {
       console.warn("PERJUANGAN: gagal menyimpan progres.", e);
@@ -331,22 +325,7 @@ PJ.MapController = (function () {
       return;
     }
 
-    // 3) Placeholder — allow marking complete so unlock chain continues
-    if (stageId === "rengasdengklok") {
-      PJ.Modal.confirm({
-        title: mission ? tField(mission.title) : "Rengasdengklok",
-        body: PJ.I18N
-          ? (PJ.I18N.getLang() === "id"
-            ? "Stage interaktif Rengasdengklok masih disiapkan. Kamu bisa menandai misi ini selesai untuk membuka Proklamasi."
-            : "The interactive Rengasdengklok stage is still being prepared. You can mark this mission complete to unlock the Proclamation.")
-          : "Stage masih disiapkan. Tandai selesai untuk membuka misi berikutnya.",
-        confirmLabel: PJ.I18N ? (PJ.I18N.getLang() === "id" ? "TANDAI SELESAI" : "MARK COMPLETE") : "TANDAI SELESAI",
-        cancelLabel: PJ.I18N ? (PJ.I18N.getLang() === "id" ? "KEMBALI" : "BACK") : "KEMBALI",
-        onConfirm: () => window.markMissionComplete("rengasdengklok"),
-      });
-      return;
-    }
-
+    // 3) Placeholder
     PJ.Modal.info({
       title: mission ? tField(mission.title) : (PJ.I18N ? PJ.I18N.t("coming_title") : "Misi"),
       body: PJ.I18N ? PJ.I18N.t("coming_body") : "Gameplay tahap ini sedang disiapkan.",
