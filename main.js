@@ -73,22 +73,31 @@
 
   /* ---------- Entrance 1 ---------- */
   function initEntrance1() {
+    const bg = screens.entrance1;
+    const flagWrap = $("flagWrap");
+    const textBlock = $("e1Text");
+    const hint = $("e1Hint");
+
+    // Create flag instance early, but only start after screen is visible
     try {
       flagInstance = PJ.FlagCloth($("flagCanvas"));
     } catch (err) {
       console.warn("[PERJUANGAN] flag failed:", err);
     }
 
-    const bg = screens.entrance1;
-    const flagWrap = $("flagWrap");
-    const textBlock = $("e1Text");
-    const hint = $("e1Hint");
-
     requestAnimationFrame(() => bg.classList.add("bg-in"));
     setTimeout(() => {
       if (flagWrap) flagWrap.classList.add("is-in");
-      if (flagInstance) flagInstance.start();
-    }, 300);
+      // Start after flag-wrap is visible + layout settled
+      if (flagInstance) {
+        flagInstance.configure();
+        flagInstance.start();
+      }
+    }, 350);
+    // Extra measure after CSS transition / font layout
+    setTimeout(() => {
+      if (flagInstance) flagInstance.configure();
+    }, 700);
     setTimeout(() => { if (textBlock) textBlock.classList.add("is-in"); }, 1000);
     setTimeout(() => { if (hint) hint.classList.add("is-in"); }, 1600);
 
