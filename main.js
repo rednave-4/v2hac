@@ -1,8 +1,5 @@
 /* ==========================================================================
-   PERJUANGAN — main.js
-   Orchestrates the screen flow: Entrance 1 (flag splash) -> Entrance 2
-   (credits) -> Main Map. Handles the flag cloth instance lifecycle and a
-   hidden dev-mode toggle (Ctrl+Shift+D) for testing the unlock chain.
+   PERJUANGAN — main.js  (v2.1 — bulletproof entrance click/touch)
    ========================================================================== */
 
 (function () {
@@ -45,6 +42,7 @@
     const flagWrap = document.getElementById("flagWrap");
     const textBlock = document.getElementById("e1Text");
     const hint = document.getElementById("e1Hint");
+    const hit = document.getElementById("e1Hit");
 
     requestAnimationFrame(() => bg.classList.add("bg-in"));
     setTimeout(() => {
@@ -54,28 +52,37 @@
     setTimeout(() => textBlock.classList.add("is-in"), 1000);
     setTimeout(() => hint.classList.add("is-in"), 1600);
 
-    // Unified pointer + keyboard advance (pointerup covers mouse/touch/pen reliably)
     const advance = (e) => {
       if (advancedFromE1) return;
-
       if (e && e.type === "keydown") {
         if (e.key !== " " && e.key !== "Enter" && e.code !== "Space") return;
       }
-      if (e && e.type && e.type.startsWith("pointer") && e.isPrimary === false) return;
+      // only primary pointer
+      if (e && typeof e.isPrimary === "boolean" && !e.isPrimary) return;
 
       if (e) {
         e.preventDefault();
         e.stopPropagation();
       }
       advancedFromE1 = true;
+      console.log("[PERJUANGAN] Entrance 1 advanced via", e ? e.type : "unknown");
       leaveEntrance1();
     };
 
-    document.addEventListener("keydown", advance, true);
+    // Bind to the dedicated full-screen hit button (most reliable)
+    if (hit) {
+      hit.addEventListener("pointerup", advance, { passive: false });
+      hit.addEventListener("click", advance);
+      hit.addEventListener("touchend", advance, { passive: false });
+    }
+    // Also bind to the section itself as backup
     screens.entrance1.addEventListener("pointerup", advance, { passive: false });
-    screens.entrance1.addEventListener("click", advance); // legacy fallback
+    screens.entrance1.addEventListener("click", advance);
+
+    document.addEventListener("keydown", advance, true);
 
     screens.entrance1._advanceHandler = advance;
+    screens.entrance1._hitEl = hit;
   }
 
   function leaveEntrance1() {
@@ -83,10 +90,16 @@
     setTimeout(() => {
       if (flagInstance) flagInstance.stop();
       const h = screens.entrance1._advanceHandler;
+      const hit = screens.entrance1._hitEl;
       if (h) {
         document.removeEventListener("keydown", h, true);
         screens.entrance1.removeEventListener("pointerup", h);
         screens.entrance1.removeEventListener("click", h);
+        if (hit) {
+          hit.removeEventListener("pointerup", h);
+          hit.removeEventListener("click", h);
+          hit.removeEventListener("touchend", h);
+        }
       }
       screens.entrance1.hidden = true;
       goTo("entrance2");
@@ -96,7 +109,11 @@
   // ---------- Entrance 2 ----------
   function initEntrance2() {
     const ctaBtn = document.getElementById("ctaEnterMap");
+    if (!ctaBtn) return;
     ctaBtn.style.pointerEvents = "auto";
+    ctaBtn.style.position = "relative";
+    ctaBtn.style.zIndex = "10";
+
     const goMap = (e) => {
       if (e) {
         e.preventDefault();
@@ -114,6 +131,7 @@
     };
     ctaBtn.addEventListener("pointerup", goMap, { passive: false });
     ctaBtn.addEventListener("click", goMap);
+    ctaBtn.addEventListener("touchend", goMap, { passive: false });
   }
 
   // ---------- Hidden dev toggle ----------
