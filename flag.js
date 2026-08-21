@@ -1,7 +1,7 @@
 /* ==========================================================================
-   PERJUANGAN — flag.js v2.3
-   Cloth flag. Never depends on parent being visible at construct time.
-   Uses window-based fallback size so W/H are never 0.
+   PERJUANGAN — flag.js v2.5
+   Sang Saka Merah Putih — official ratio 3:2 (width:height).
+   Fabric always 3:2; container only provides the drawing box.
    ========================================================================== */
 
 window.PJ = window.PJ || {};
@@ -12,8 +12,8 @@ PJ.FlagCloth = function (canvas) {
   let dpr = 1;
   let cols = 16;
   let rows = 10;
-  let W = 320;
-  let H = 213;
+  let W = 300; // fabric width (CSS px)
+  let H = 200; // fabric height = W * 2/3
   let viewW = 400;
   let viewH = 280;
   let running = false;
@@ -22,6 +22,7 @@ PJ.FlagCloth = function (canvas) {
 
   const RED = { r: 200, g: 16, b: 46 };
   const WHITE = { r: 245, g: 241, b: 232 };
+  const FLAG_RATIO = 3 / 2; // official W/H
 
   function isMobile() {
     return window.innerWidth < 720;
@@ -29,8 +30,15 @@ PJ.FlagCloth = function (canvas) {
 
   function configure() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
-
     const parent = canvas.parentElement;
+
+    // Never lock parent with inline sizes — CSS owns the box
+    if (parent) {
+      parent.style.removeProperty("width");
+      parent.style.removeProperty("height");
+      delete parent.dataset.flagSized;
+    }
+
     let pw = 0;
     let ph = 0;
     if (parent) {
@@ -39,33 +47,40 @@ PJ.FlagCloth = function (canvas) {
       ph = rect.height;
     }
 
-    // Fallback when parent not laid out yet (hidden screen, flex not settled)
-    if (pw < 32 || ph < 32) {
-      pw = Math.min(window.innerWidth * 0.88, 720);
-      ph = Math.min(window.innerWidth * 0.52, 440);
-      if (pw < 32) pw = 320;
-      if (ph < 32) ph = 213;
-      // Apply explicit size on parent so absolute canvas has a box
-      if (parent) {
-        parent.style.width = pw + "px";
-        parent.style.height = ph + "px";
-      }
+    // Fallback if layout not ready (hidden / first frame)
+    if (pw < 40 || ph < 40) {
+      pw = Math.min(window.innerWidth * 0.85, 560);
+      ph = pw / 1.2; // match CSS aspect-ratio 6/5
     }
 
     viewW = pw;
     viewH = ph;
 
-    canvas.width = Math.max(1, Math.round(pw * dpr));
-    canvas.height = Math.max(1, Math.round(ph * dpr));
-    canvas.style.width = pw + "px";
-    canvas.style.height = ph + "px";
+    const bw = Math.max(1, Math.round(pw * dpr));
+    const bh = Math.max(1, Math.round(ph * dpr));
+    if (canvas.width !== bw || canvas.height !== bh) {
+      canvas.width = bw;
+      canvas.height = bh;
+    }
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const maxW = Math.min(pw * 0.95, 700);
-    W = Math.max(120, maxW);
-    H = W * (2 / 3);
-    cols = isMobile() ? 12 : 16;
-    rows = isMobile() ? 8 : 10; // even → exact red/white half
+    // Fit 3:2 fabric inside the box with room for pole (top) + shadow (bottom)
+    // Vertical pack: pole top 0.12H + fabric H + shadow ~0.18H ≈ 1.30H
+    const marginX = Math.max(8, pw * 0.04);
+    const marginY = Math.max(6, ph * 0.04);
+    const availW = pw - marginX * 2;
+    const availH = ph - marginY * 2;
+
+    const maxWByWidth = availW * 0.94;
+    const maxWByHeight = (availH / 1.3) * FLAG_RATIO;
+    W = Math.min(maxWByWidth, maxWByHeight, 620);
+    W = Math.max(120, W);
+    H = W / FLAG_RATIO; // strict 3:2
+
+    cols = isMobile() ? 12 : 18;
+    rows = isMobile() ? 8 : 12; // even → red/white exact half
     return true;
   }
 
@@ -90,24 +105,26 @@ PJ.FlagCloth = function (canvas) {
 
     ctx.clearRect(0, 0, viewW, viewH);
 
-    const anchorX = viewW * 0.10;
-    const anchorY = viewH * 0.22;
-    const sway = Math.sin(t * 0.55) * 4;
+    // Center composition; offset for pole sitting on the left of the cloth
+    const packH = H * 1.3;
+    const anchorX = (viewW - W) * 0.5 + 4;
+    const anchorY = (viewH - packH) * 0.5 + H * 0.12;
+    const sway = Math.sin(t * 0.55) * 3.5;
 
     ctx.save();
-    ctx.translate(anchorX + sway * 0.15, anchorY);
+    ctx.translate(anchorX + sway * 0.12, anchorY);
 
-    // Shadow
+    // Soft ground shadow
     ctx.save();
-    ctx.translate(8, H * 0.12);
-    ctx.fillStyle = "rgba(0,0,0,0.3)";
+    ctx.translate(6, H * 0.1);
+    ctx.fillStyle = "rgba(0,0,0,0.28)";
     ctx.beginPath();
-    ctx.ellipse(W * 0.45, H * 0.55, W * 0.4, H * 0.16, 0.08, 0, Math.PI * 2);
+    ctx.ellipse(W * 0.48, H * 0.55, W * 0.42, H * 0.15, 0.06, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
 
-    const amp1 = H * 0.055;
-    const amp2 = H * 0.028;
+    const amp1 = H * 0.05;
+    const amp2 = H * 0.025;
     const colOffset = [];
     const colScale = [];
     for (let i = 0; i <= cols; i++) {
@@ -115,7 +132,7 @@ PJ.FlagCloth = function (canvas) {
       const phase1 = i * 0.55 - t * 1.8;
       const phase2 = i * 1.15 - t * 2.6 + 1.2;
       colOffset[i] = (Math.sin(phase1) * amp1 + Math.sin(phase2) * amp2) * dist;
-      colScale[i] = 1 - 0.06 * dist * (1 - Math.cos(phase1)) * 0.5;
+      colScale[i] = 1 - 0.04 * dist * (1 - Math.cos(phase1)) * 0.5;
     }
 
     const verts = [];
@@ -130,7 +147,6 @@ PJ.FlagCloth = function (canvas) {
       verts.push(row);
     }
 
-    // rows must be even so red/white split is exact 50/50
     const half = rows / 2;
     for (let j = 0; j < rows; j++) {
       for (let i = 0; i < cols; i++) {
@@ -139,7 +155,8 @@ PJ.FlagCloth = function (canvas) {
         const p2 = verts[j + 1][i + 1];
         const p3 = verts[j + 1][i];
         const base = j < half ? RED : WHITE;
-        const slope = (colOffset[Math.min(i + 1, cols)] - colOffset[i]) / (amp1 + amp2 + 0.001);
+        const slope =
+          (colOffset[Math.min(i + 1, cols)] - colOffset[i]) / (amp1 + amp2 + 0.001);
         ctx.fillStyle = shade(base, -slope * 0.8);
         ctx.beginPath();
         ctx.moveTo(p0.x, p0.y);
@@ -156,7 +173,7 @@ PJ.FlagCloth = function (canvas) {
     ctx.fillRect(-6, -H * 0.12, 6, H * 1.24);
     ctx.fillStyle = "#e8c468";
     ctx.beginPath();
-    ctx.arc(-3, -H * 0.12, 7, 0, Math.PI * 2);
+    ctx.arc(-3, -H * 0.12, 6.5, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
@@ -168,14 +185,13 @@ PJ.FlagCloth = function (canvas) {
     running = true;
     startTime = performance.now();
     configure();
-    // Re-measure after a couple frames (layout may settle)
+    // Re-measure after layout settles
     requestAnimationFrame(() => {
       configure();
       requestAnimationFrame(() => configure());
     });
-    setTimeout(() => configure(), 100);
-    setTimeout(() => configure(), 400);
-    setTimeout(() => configure(), 900);
+    setTimeout(() => configure(), 150);
+    setTimeout(() => configure(), 500);
     rafId = requestAnimationFrame(render);
   }
 
