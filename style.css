@@ -131,11 +131,12 @@ button {
   pointer-events: none;
   position: relative;
   flex-shrink: 0;
-  /* Width drives size; aspect-ratio sets height — no max-height (that broke ratio) */
-  width: min(85vw, 560px, calc(55vh * 1.2));
-  aspect-ratio: 6 / 5; /* room for pole + 3:2 cloth + shadow */
-  height: auto;
-  min-width: 240px;
+  width: min(70vw, 520px);
+  height: min(52vw, 390px);
+  max-width: 520px;
+  max-height: 390px;
+  min-width: 220px;
+  min-height: 165px;
   opacity: 0;
   transform: scale(0.96);
   transition: opacity 0.9s ease, transform 0.9s ease;
@@ -1182,7 +1183,7 @@ button {
 /* Small screens — entrance text scaling                                  */
 /* -------------------------------------------------------------------- */
 @media (max-width: 480px) {
-  .flag-wrap { width: min(92vw, calc(50vh * 1.2)); aspect-ratio: 6 / 5; height: auto; }
+  .flag-wrap { width: min(88vw, 420px); height: min(66vw, 315px); }
   .map-header { padding: 0.8rem 1rem; }
   .brand-title { font-size: 0.92rem; }
   .header-right { gap: 0.6rem; }

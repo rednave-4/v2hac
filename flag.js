@@ -1,7 +1,7 @@
 /* ==========================================================================
-   PERJUANGAN — flag.js v2.5
-   Sang Saka Merah Putih — official ratio 3:2 (width:height).
-   Fabric always 3:2; container only provides the drawing box.
+   PERJUANGAN — flag.js
+   Cloth Red-White flag (matches entrance reference look).
+   Official ratio 3:2 · pinned at pole · free edge waves · solemn wind.
    ========================================================================== */
 
 window.PJ = window.PJ || {};
@@ -10,33 +10,26 @@ PJ.FlagCloth = function (canvas) {
   const ctx = canvas.getContext("2d", { alpha: true });
 
   let dpr = 1;
-  let cols = 16;
+  let cols = 14;
   let rows = 10;
-  let W = 300; // fabric width (CSS px)
-  let H = 200; // fabric height = W * 2/3
-  let viewW = 400;
-  let viewH = 280;
+  let W = 360;
+  let H = 240;
+  let viewW = 480;
+  let viewH = 360;
   let running = false;
   let rafId = null;
   let startTime = 0;
 
   const RED = { r: 200, g: 16, b: 46 };
   const WHITE = { r: 245, g: 241, b: 232 };
-  const FLAG_RATIO = 3 / 2; // official W/H
-
-  function isMobile() {
-    return window.innerWidth < 720;
-  }
 
   function configure() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     const parent = canvas.parentElement;
 
-    // Never lock parent with inline sizes — CSS owns the box
     if (parent) {
       parent.style.removeProperty("width");
       parent.style.removeProperty("height");
-      delete parent.dataset.flagSized;
     }
 
     let pw = 0;
@@ -46,48 +39,33 @@ PJ.FlagCloth = function (canvas) {
       pw = rect.width;
       ph = rect.height;
     }
-
-    // Fallback if layout not ready (hidden / first frame)
     if (pw < 40 || ph < 40) {
-      pw = Math.min(window.innerWidth * 0.85, 560);
-      ph = pw / 1.2; // match CSS aspect-ratio 6/5
+      pw = Math.min(window.innerWidth * 0.7, 520);
+      ph = pw * 0.75;
     }
 
     viewW = pw;
     viewH = ph;
 
-    const bw = Math.max(1, Math.round(pw * dpr));
-    const bh = Math.max(1, Math.round(ph * dpr));
-    if (canvas.width !== bw || canvas.height !== bh) {
-      canvas.width = bw;
-      canvas.height = bh;
-    }
+    canvas.width = Math.max(1, Math.round(pw * dpr));
+    canvas.height = Math.max(1, Math.round(ph * dpr));
     canvas.style.width = "100%";
     canvas.style.height = "100%";
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // Fit 3:2 fabric inside the box with room for pole (top) + shadow (bottom)
-    // Vertical pack: pole top 0.12H + fabric H + shadow ~0.18H ≈ 1.30H
-    const marginX = Math.max(8, pw * 0.04);
-    const marginY = Math.max(6, ph * 0.04);
-    const availW = pw - marginX * 2;
-    const availH = ph - marginY * 2;
+    // Fabric size: fill most of the box, keep 3:2
+    const maxW = Math.min(pw * 0.82, ph * 0.82 * 1.5, 480);
+    W = Math.max(160, maxW);
+    H = W * (2 / 3);
 
-    const maxWByWidth = availW * 0.94;
-    const maxWByHeight = (availH / 1.3) * FLAG_RATIO;
-    W = Math.min(maxWByWidth, maxWByHeight, 620);
-    W = Math.max(120, W);
-    H = W / FLAG_RATIO; // strict 3:2
-
-    cols = isMobile() ? 12 : 18;
-    rows = isMobile() ? 8 : 12; // even → red/white exact half
-    return true;
+    cols = window.innerWidth < 720 ? 12 : 14;
+    rows = 10;
   }
 
   function shade(base, factor) {
     const f = Math.max(-1, Math.min(1, factor));
     const mix = f >= 0 ? 255 : 0;
-    const amt = Math.abs(f) * (f >= 0 ? 0.28 : 0.35);
+    const amt = Math.abs(f) * (f >= 0 ? 0.22 : 0.3);
     return (
       "rgb(" +
       Math.round(base.r + (mix - base.r) * amt) +
@@ -105,34 +83,34 @@ PJ.FlagCloth = function (canvas) {
 
     ctx.clearRect(0, 0, viewW, viewH);
 
-    // Center composition; offset for pole sitting on the left of the cloth
-    const packH = H * 1.3;
-    const anchorX = (viewW - W) * 0.5 + 4;
-    const anchorY = (viewH - packH) * 0.5 + H * 0.12;
-    const sway = Math.sin(t * 0.55) * 3.5;
+    // Centered like the reference shot
+    const anchorX = (viewW - W) * 0.5 + 8;
+    const anchorY = (viewH - H) * 0.42;
+    const sway = Math.sin(t * 0.5) * 3;
 
     ctx.save();
-    ctx.translate(anchorX + sway * 0.12, anchorY);
+    ctx.translate(anchorX + sway * 0.1, anchorY);
 
-    // Soft ground shadow
+    // Shadow
     ctx.save();
-    ctx.translate(6, H * 0.1);
-    ctx.fillStyle = "rgba(0,0,0,0.28)";
+    ctx.translate(10, H * 0.15);
+    ctx.fillStyle = "rgba(0,0,0,0.32)";
     ctx.beginPath();
-    ctx.ellipse(W * 0.48, H * 0.55, W * 0.42, H * 0.15, 0.06, 0, Math.PI * 2);
+    ctx.ellipse(W * 0.45, H * 0.5, W * 0.38, H * 0.14, 0.05, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
 
-    const amp1 = H * 0.05;
-    const amp2 = H * 0.025;
+    // Wave — medium solemn wind
+    const amp1 = H * 0.048;
+    const amp2 = H * 0.022;
     const colOffset = [];
     const colScale = [];
     for (let i = 0; i <= cols; i++) {
       const dist = i / cols;
-      const phase1 = i * 0.55 - t * 1.8;
-      const phase2 = i * 1.15 - t * 2.6 + 1.2;
+      const phase1 = i * 0.5 - t * 1.65;
+      const phase2 = i * 1.1 - t * 2.4 + 1.0;
       colOffset[i] = (Math.sin(phase1) * amp1 + Math.sin(phase2) * amp2) * dist;
-      colScale[i] = 1 - 0.04 * dist * (1 - Math.cos(phase1)) * 0.5;
+      colScale[i] = 1 - 0.035 * dist * (1 - Math.cos(phase1)) * 0.5;
     }
 
     const verts = [];
@@ -157,7 +135,7 @@ PJ.FlagCloth = function (canvas) {
         const base = j < half ? RED : WHITE;
         const slope =
           (colOffset[Math.min(i + 1, cols)] - colOffset[i]) / (amp1 + amp2 + 0.001);
-        ctx.fillStyle = shade(base, -slope * 0.8);
+        ctx.fillStyle = shade(base, -slope * 0.75);
         ctx.beginPath();
         ctx.moveTo(p0.x, p0.y);
         ctx.lineTo(p1.x, p1.y);
@@ -168,12 +146,12 @@ PJ.FlagCloth = function (canvas) {
       }
     }
 
-    // Pole
-    ctx.fillStyle = "#8a6a2f";
-    ctx.fillRect(-6, -H * 0.12, 6, H * 1.24);
+    // Pole + finial (gold)
+    ctx.fillStyle = "#9a7a3a";
+    ctx.fillRect(-5, -H * 0.08, 5, H * 1.16);
     ctx.fillStyle = "#e8c468";
     ctx.beginPath();
-    ctx.arc(-3, -H * 0.12, 6.5, 0, Math.PI * 2);
+    ctx.arc(-2.5, -H * 0.08, 6, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
@@ -185,13 +163,12 @@ PJ.FlagCloth = function (canvas) {
     running = true;
     startTime = performance.now();
     configure();
-    // Re-measure after layout settles
     requestAnimationFrame(() => {
       configure();
       requestAnimationFrame(() => configure());
     });
-    setTimeout(() => configure(), 150);
-    setTimeout(() => configure(), 500);
+    setTimeout(() => configure(), 200);
+    setTimeout(() => configure(), 600);
     rafId = requestAnimationFrame(render);
   }
 
@@ -202,9 +179,7 @@ PJ.FlagCloth = function (canvas) {
   }
 
   configure();
-  window.addEventListener("resize", () => {
-    configure();
-  });
+  window.addEventListener("resize", configure);
 
   return { start, stop, configure };
 };
