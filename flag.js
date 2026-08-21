@@ -64,8 +64,8 @@ PJ.FlagCloth = function (canvas) {
     const maxW = Math.min(pw * 0.78, 560);
     W = Math.max(120, maxW);
     H = W * (2 / 3);
-    cols = isMobile() ? 10 : 16;
-    rows = isMobile() ? 6 : 10;
+    cols = isMobile() ? 12 : 16;
+    rows = isMobile() ? 8 : 10; // even → exact red/white half
     return true;
   }
 
@@ -130,13 +130,15 @@ PJ.FlagCloth = function (canvas) {
       verts.push(row);
     }
 
+    // rows must be even so red/white split is exact 50/50
+    const half = rows / 2;
     for (let j = 0; j < rows; j++) {
       for (let i = 0; i < cols; i++) {
         const p0 = verts[j][i];
         const p1 = verts[j][i + 1];
         const p2 = verts[j + 1][i + 1];
         const p3 = verts[j + 1][i];
-        const base = j < rows / 2 ? RED : WHITE;
+        const base = j < half ? RED : WHITE;
         const slope = (colOffset[Math.min(i + 1, cols)] - colOffset[i]) / (amp1 + amp2 + 0.001);
         ctx.fillStyle = shade(base, -slope * 0.8);
         ctx.beginPath();

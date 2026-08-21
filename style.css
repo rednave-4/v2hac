@@ -131,13 +131,14 @@ button {
   pointer-events: none;
   position: relative;
   flex-shrink: 0;
-  width: min(78vw, 640px);
-  height: min(42vw, 340px);
+  width: min(72vw, 560px);
+  height: min(38vw, 300px);
   min-width: 200px;
   min-height: 140px;
   opacity: 0;
   transform: scale(0.96);
   transition: opacity 0.9s ease, transform 0.9s ease;
+  margin-bottom: 0.5rem;
 }
 .flag-wrap.is-in {
   opacity: 1 !important;
@@ -192,7 +193,15 @@ button {
 
 .e1-hint {
   position: absolute;
-  bottom: 6vh;
+  left: 0;
+  right: 0;
+  bottom: max(1.25rem, 4.5vh);
+  width: 100%;
+  margin: 0;
+  padding: 0 1rem;
+  text-align: center;
+  z-index: 6;
+  pointer-events: none;
   font-family: var(--font-mono);
   font-size: 0.78rem;
   letter-spacing: 0.08em;
@@ -207,6 +216,16 @@ button {
 @keyframes hintPulse {
   0%, 100% { opacity: 0.55; }
   50% { opacity: 1; }
+}
+
+/* Keep title block clear of the bottom hint */
+.e1-text {
+  position: relative;
+  z-index: 2;
+  padding-bottom: 0.5rem;
+}
+.title-accent {
+  margin-bottom: 0.25rem;
 }
 
 /* -------------------------------------------------------------------- */
