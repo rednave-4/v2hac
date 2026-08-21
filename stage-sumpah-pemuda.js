@@ -348,6 +348,11 @@ PJ.Stages["sumpah-pemuda"] = (function () {
 
   function open(opts) {
     ensureDom();
+    // Reclaim shared chrome buttons for this stage
+    if (closeBtn) closeBtn.onclick = (e) => { e.preventDefault(); close(false); };
+    const completeBtn = document.getElementById("stageCompleteBtn");
+    if (completeBtn) completeBtn.onclick = (e) => { e.preventDefault(); close(true); };
+
     if (closeTimer) {
       clearTimeout(closeTimer);
       closeTimer = null;

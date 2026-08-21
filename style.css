@@ -131,14 +131,14 @@ button {
   pointer-events: none;
   position: relative;
   flex-shrink: 0;
-  width: min(72vw, 560px);
-  height: min(38vw, 300px);
-  min-width: 200px;
-  min-height: 140px;
+  width: min(88vw, 720px);
+  height: min(52vw, 440px);
+  min-width: 260px;
+  min-height: 180px;
   opacity: 0;
   transform: scale(0.96);
   transition: opacity 0.9s ease, transform 0.9s ease;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 .flag-wrap.is-in {
   opacity: 1 !important;
@@ -1181,7 +1181,7 @@ button {
 /* Small screens — entrance text scaling                                  */
 /* -------------------------------------------------------------------- */
 @media (max-width: 480px) {
-  .flag-wrap { width: 90vw; height: 48vw; }
+  .flag-wrap { width: 92vw; height: 56vw; }
   .map-header { padding: 0.8rem 1rem; }
   .brand-title { font-size: 0.92rem; }
   .header-right { gap: 0.6rem; }

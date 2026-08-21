@@ -1,11 +1,6 @@
 /* ==========================================================================
    PERJUANGAN — stage-rengasdengklok.js
-   "Malam ke Rengasdengklok" — 2D stealth escort (16 Agustus 1945).
-
-   Golongan muda mengawal Soekarno & Hatta ke Rengasdengklok agar proklamasi
-   segera dikumandangkan. Hindari patroli Jepang, capai rumah aman.
-
-   Kontrol: WASD / panah / sentuh & drag. Escape = tutup.
+   "Malam ke Rengasdengklok" — 2D stealth escort (harder, larger map).
    ========================================================================== */
 
 window.PJ = window.PJ || {};
@@ -26,13 +21,12 @@ PJ.Stages["rengasdengklok"] = (function () {
   let onCompleteCb = null;
   let initialized = false;
 
-  // World (logical units; camera follows player)
-  const WORLD = { w: 1400, h: 900 };
-  let player = { x: 120, y: 450, r: 14, speed: 2.6 };
-  let leaders = { x: 90, y: 450, r: 16 }; // Soekarno-Hatta group, follows player
-  let goal = { x: 1240, y: 420, r: 36 };
+  const WORLD = { w: 2200, h: 1400 };
+  let player = { x: 140, y: 700, r: 13, speed: 2.35 };
+  let leaders = { x: 100, y: 700, r: 16 };
+  let goal = { x: 2050, y: 680, r: 40 };
   let patrols = [];
-  let bushes = []; // cover
+  let bushes = [];
   let keys = Object.create(null);
   let touchId = null;
   let touchVec = { x: 0, y: 0 };
@@ -40,37 +34,49 @@ PJ.Stages["rengasdengklok"] = (function () {
   let alertTimer = 0;
   let spottedFlash = 0;
   let cam = { x: 0, y: 0 };
-  let startSafe = 90; // grace frames at start
+  let startSafe = 80;
   let particles = [];
 
   function qs(id) {
     return document.getElementById(id);
   }
 
+  function bindChrome() {
+    // Always re-bind so shared overlay buttons target THIS stage
+    closeBtn = qs("stageCloseBtn");
+    completePanel = qs("stageCompletePanel");
+    const completeBtn = qs("stageCompleteBtn");
+    if (closeBtn) {
+      closeBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        close(false);
+      };
+    }
+    if (completeBtn) {
+      completeBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        close(true);
+      };
+    }
+  }
+
   function ensureDom() {
-    if (initialized) return;
+    if (initialized) {
+      bindChrome();
+      return;
+    }
     overlay = qs("stageOverlay");
     canvas = qs("stageCanvas");
     ctx = canvas.getContext("2d");
     playArea = qs("stagePlayArea");
     progressEl = qs("stageProgress");
-    closeBtn = qs("stageCloseBtn");
-    completePanel = qs("stageCompletePanel");
     orbsLayer = qs("stageOrbsLayer");
     headingEl = overlay && overlay.querySelector(".stage-overlay__heading .eyebrow");
     hintEl = overlay && overlay.querySelector(".stage-overlay__hint");
-    const completeBtn = qs("stageCompleteBtn");
 
-    closeBtn.addEventListener("pointerup", (e) => {
-      e.preventDefault();
-      close(false);
-    });
-    if (completeBtn) {
-      completeBtn.addEventListener("pointerup", (e) => {
-        e.preventDefault();
-        close(true);
-      });
-    }
+    bindChrome();
 
     window.addEventListener("resize", () => {
       if (active) configure();
@@ -78,7 +84,6 @@ PJ.Stages["rengasdengklok"] = (function () {
     document.addEventListener("keydown", onKeyDown);
     document.addEventListener("keyup", onKeyUp);
 
-    // Touch / pointer drag on canvas for movement
     canvas.addEventListener("pointerdown", onPointerDown);
     canvas.addEventListener("pointermove", onPointerMove);
     canvas.addEventListener("pointerup", onPointerUp);
@@ -120,7 +125,6 @@ PJ.Stages["rengasdengklok"] = (function () {
   }
   function updateTouchVec(e) {
     const rect = canvas.getBoundingClientRect();
-    // screen position of player
     const sx = (player.x - cam.x) * (rect.width / W);
     const sy = (player.y - cam.y) * (rect.height / H);
     const mx = e.clientX - rect.left;
@@ -128,8 +132,7 @@ PJ.Stages["rengasdengklok"] = (function () {
     let dx = mx - sx;
     let dy = my - sy;
     const len = Math.hypot(dx, dy) || 1;
-    // deadzone
-    if (len < 18) {
+    if (len < 16) {
       touchVec.x = 0;
       touchVec.y = 0;
       return;
@@ -151,88 +154,61 @@ PJ.Stages["rengasdengklok"] = (function () {
   }
 
   function resetWorld() {
-    player = { x: 140, y: WORLD.h * 0.52, r: 14, speed: 2.75 };
-    leaders = { x: 100, y: WORLD.h * 0.52, r: 17 };
-    goal = { x: WORLD.w - 140, y: WORLD.h * 0.48, r: 42 };
+    player = { x: 150, y: WORLD.h * 0.5, r: 13, speed: 2.35 };
+    leaders = { x: 110, y: WORLD.h * 0.5, r: 16 };
+    goal = { x: WORLD.w - 150, y: WORLD.h * 0.48, r: 42 };
     lives = 3;
     alertTimer = 0;
     spottedFlash = 0;
-    startSafe = 100;
+    startSafe = 70;
     particles = [];
     completed = false;
     if (completePanel) completePanel.hidden = true;
 
-    // Cover bushes
     bushes = [
-      { x: 320, y: 280, r: 48 },
-      { x: 480, y: 620, r: 55 },
-      { x: 700, y: 220, r: 50 },
-      { x: 820, y: 580, r: 60 },
-      { x: 980, y: 340, r: 45 },
-      { x: 1100, y: 680, r: 52 },
-      { x: 560, y: 420, r: 40 },
-      { x: 250, y: 700, r: 42 },
+      { x: 280, y: 320, r: 42 },
+      { x: 420, y: 980, r: 48 },
+      { x: 640, y: 240, r: 40 },
+      { x: 780, y: 1100, r: 50 },
+      { x: 980, y: 520, r: 38 },
+      { x: 1200, y: 300, r: 44 },
+      { x: 1350, y: 900, r: 46 },
+      { x: 1580, y: 480, r: 40 },
+      { x: 1750, y: 1050, r: 48 },
+      { x: 520, y: 600, r: 36 },
+      { x: 1100, y: 720, r: 34 },
+      { x: 1480, y: 200, r: 42 },
     ];
 
-    // Patrols: path waypoints, speed, vision radius & angle
+    // More patrols, faster, wider vision
     patrols = [
-      {
-        path: [
-          { x: 380, y: 180 },
-          { x: 380, y: 720 },
-        ],
-        idx: 0,
-        t: 0,
-        speed: 1.15,
-        angle: Math.PI / 2,
-        vision: 130,
-        fov: 0.7,
-      },
-      {
-        path: [
-          { x: 620, y: 750 },
-          { x: 620, y: 160 },
-        ],
-        idx: 0,
-        t: 0,
-        speed: 1.0,
-        angle: -Math.PI / 2,
-        vision: 140,
-        fov: 0.65,
-      },
-      {
-        path: [
-          { x: 900, y: 200 },
-          { x: 1050, y: 450 },
-          { x: 900, y: 700 },
-          { x: 750, y: 450 },
-        ],
-        idx: 0,
-        t: 0,
-        speed: 1.25,
-        angle: 0,
-        vision: 125,
-        fov: 0.75,
-      },
-      {
-        path: [
-          { x: 1180, y: 150 },
-          { x: 1180, y: 780 },
-        ],
-        idx: 0,
-        t: 0,
-        speed: 0.95,
-        angle: Math.PI / 2,
-        vision: 120,
-        fov: 0.7,
-      },
+      mkPatrol([{ x: 360, y: 160 }, { x: 360, y: 1200 }], 1.45, 155, 0.72),
+      mkPatrol([{ x: 580, y: 1280 }, { x: 580, y: 140 }], 1.35, 160, 0.7),
+      mkPatrol([{ x: 820, y: 200 }, { x: 980, y: 700 }, { x: 820, y: 1180 }, { x: 680, y: 700 }], 1.5, 150, 0.75),
+      mkPatrol([{ x: 1100, y: 120 }, { x: 1100, y: 1280 }], 1.4, 165, 0.68),
+      mkPatrol([{ x: 1350, y: 1100 }, { x: 1550, y: 500 }, { x: 1350, y: 200 }, { x: 1180, y: 500 }], 1.55, 145, 0.78),
+      mkPatrol([{ x: 1680, y: 180 }, { x: 1680, y: 1220 }], 1.3, 158, 0.7),
+      mkPatrol([{ x: 1900, y: 1000 }, { x: 1900, y: 250 }], 1.4, 150, 0.72),
+      mkPatrol([{ x: 480, y: 450 }, { x: 720, y: 450 }, { x: 720, y: 850 }, { x: 480, y: 850 }], 1.25, 140, 0.8),
+      mkPatrol([{ x: 1450, y: 650 }, { x: 1750, y: 650 }], 1.6, 135, 0.75),
     ];
-    patrols.forEach((p) => {
-      p.x = p.path[0].x;
-      p.y = p.path[0].y;
-    });
 
     updateProgressUI();
+  }
+
+  function mkPatrol(path, speed, vision, fov) {
+    const p = {
+      path,
+      idx: 0,
+      t: 0,
+      speed,
+      angle: 0,
+      vision,
+      fov,
+      x: path[0].x,
+      y: path[0].y,
+    };
+    return p;
   }
 
   function updateProgressUI() {
@@ -240,7 +216,7 @@ PJ.Stages["rengasdengklok"] = (function () {
   }
 
   function inBush(x, y) {
-    return bushes.some((b) => Math.hypot(x - b.x, y - b.y) < b.r * 0.85);
+    return bushes.some((b) => Math.hypot(x - b.x, y - b.y) < b.r * 0.82);
   }
 
   function moveEntity(ent, vx, vy, speed) {
@@ -256,9 +232,7 @@ PJ.Stages["rengasdengklok"] = (function () {
   function updatePatrol(p) {
     const a = p.path[p.idx];
     const b = p.path[(p.idx + 1) % p.path.length];
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    const dist = Math.hypot(dx, dy) || 1;
+    const dist = Math.hypot(b.x - a.x, b.y - a.y) || 1;
     p.t += p.speed / dist;
     if (p.t >= 1) {
       p.t = 0;
@@ -287,41 +261,36 @@ PJ.Stages["rengasdengklok"] = (function () {
   function onSpotted() {
     if (startSafe > 0 || alertTimer > 0 || completed) return;
     lives -= 1;
-    alertTimer = 90;
+    alertTimer = 85;
     spottedFlash = 40;
     updateProgressUI();
-    // knock back toward start a bit
-    player.x = Math.max(80, player.x - 80);
+    player.x = Math.max(80, player.x - 100);
     leaders.x = player.x - 40;
     leaders.y = player.y;
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 16; i++) {
       particles.push({
         x: player.x,
         y: player.y,
         vx: (Math.random() - 0.5) * 6,
         vy: (Math.random() - 0.5) * 6,
-        life: 30 + Math.random() * 20,
+        life: 28 + Math.random() * 18,
         color: RED,
       });
     }
     if (lives <= 0) {
-      // soft reset world, keep trying
       setTimeout(() => {
         if (active && !completed) resetWorld();
-      }, 600);
+      }, 550);
     }
   }
 
   function update() {
     if (!active || completed) return;
-
     if (startSafe > 0) startSafe--;
     if (alertTimer > 0) alertTimer--;
     if (spottedFlash > 0) spottedFlash--;
 
-    // input
-    let vx = 0;
-    let vy = 0;
+    let vx = 0, vy = 0;
     if (keys["w"] || keys["arrowup"]) vy -= 1;
     if (keys["s"] || keys["arrowdown"]) vy += 1;
     if (keys["a"] || keys["arrowleft"]) vx -= 1;
@@ -330,20 +299,13 @@ PJ.Stages["rengasdengklok"] = (function () {
       vx += touchVec.x;
       vy += touchVec.y;
     }
+    if (vx || vy) moveEntity(player, vx, vy, player.speed);
 
-    if (vx !== 0 || vy !== 0) {
-      moveEntity(player, vx, vy, player.speed);
-    }
-
-    // leaders follow player with lag
-    const ldx = player.x - 36 - leaders.x;
-    const ldy = player.y - leaders.y;
-    leaders.x += ldx * 0.08;
-    leaders.y += ldy * 0.08;
+    leaders.x += (player.x - 36 - leaders.x) * 0.09;
+    leaders.y += (player.y - leaders.y) * 0.09;
 
     patrols.forEach(updatePatrol);
 
-    // detection — check player & leaders
     if (startSafe <= 0 && alertTimer <= 0) {
       for (const p of patrols) {
         if (canSee(p, player.x, player.y) || canSee(p, leaders.x, leaders.y)) {
@@ -353,12 +315,10 @@ PJ.Stages["rengasdengklok"] = (function () {
       }
     }
 
-    // goal
     if (Math.hypot(player.x - goal.x, player.y - goal.y) < goal.r + player.r) {
       win();
     }
 
-    // particles
     particles = particles.filter((pt) => {
       pt.x += pt.vx;
       pt.y += pt.vy;
@@ -368,8 +328,7 @@ PJ.Stages["rengasdengklok"] = (function () {
       return pt.life > 0;
     });
 
-    // camera
-    cam.x = player.x - W * 0.4;
+    cam.x = player.x - W * 0.38;
     cam.y = player.y - H * 0.5;
     cam.x = Math.max(0, Math.min(WORLD.w - W, cam.x));
     cam.y = Math.max(0, Math.min(WORLD.h - H, cam.y));
@@ -378,31 +337,31 @@ PJ.Stages["rengasdengklok"] = (function () {
   function win() {
     if (completed) return;
     completed = true;
+    bindChrome(); // ensure Lanjutkan button calls our close(true)
     if (completePanel) {
+      const isEn = PJ.I18N && PJ.I18N.getLang() === "en";
       if (headingEl) headingEl.textContent = "Rengasdengklok";
       const title = completePanel.querySelector(".stage-complete__title");
       const body = completePanel.querySelector(".stage-complete__body");
       const eyebrow = completePanel.querySelector(".eyebrow");
-      if (eyebrow) eyebrow.textContent = PJ.I18N && PJ.I18N.getLang() === "en" ? "Safe" : "Aman";
+      if (eyebrow) eyebrow.textContent = isEn ? "Safe" : "Aman";
       if (title)
-        title.textContent =
-          PJ.I18N && PJ.I18N.getLang() === "en"
-            ? "Soekarno & Hatta have arrived"
-            : "Soekarno & Hatta tiba dengan selamat";
+        title.textContent = isEn
+          ? "Soekarno & Hatta have arrived"
+          : "Soekarno & Hatta tiba dengan selamat";
       if (body)
-        body.textContent =
-          PJ.I18N && PJ.I18N.getLang() === "en"
-            ? "Under pressure from the youth, the proclamation could no longer be delayed."
-            : "Di bawah desakan golongan muda, proklamasi tak lagi bisa ditunda.";
+        body.textContent = isEn
+          ? "Under pressure from the youth, the proclamation could no longer be delayed."
+          : "Di bawah desakan golongan muda, proklamasi tak lagi bisa ditunda.";
       completePanel.hidden = false;
     }
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 36; i++) {
       particles.push({
         x: goal.x,
         y: goal.y,
         vx: (Math.random() - 0.5) * 8,
         vy: (Math.random() - 0.5) * 8,
-        life: 40 + Math.random() * 30,
+        life: 40 + Math.random() * 25,
         color: GOLD,
       });
     }
@@ -412,8 +371,8 @@ PJ.Stages["rengasdengklok"] = (function () {
     ctx.save();
     ctx.translate(p.x - cam.x, p.y - cam.y);
     ctx.rotate(p.angle);
-    const grd = ctx.createRadialGradient(0, 0, 10, 0, 0, p.vision);
-    grd.addColorStop(0, "rgba(200, 16, 46, 0.22)");
+    const grd = ctx.createRadialGradient(0, 0, 8, 0, 0, p.vision);
+    grd.addColorStop(0, "rgba(200, 16, 46, 0.28)");
     grd.addColorStop(1, "rgba(200, 16, 46, 0)");
     ctx.fillStyle = grd;
     ctx.beginPath();
@@ -427,15 +386,12 @@ PJ.Stages["rengasdengklok"] = (function () {
   function render() {
     if (!ctx || !active) return;
     ctx.clearRect(0, 0, W, H);
-
-    // night ground
     ctx.fillStyle = "#0c0f0a";
     ctx.fillRect(0, 0, W, H);
 
-    // subtle grid / fields
-    ctx.strokeStyle = "rgba(201, 162, 39, 0.06)";
+    ctx.strokeStyle = "rgba(201, 162, 39, 0.05)";
     ctx.lineWidth = 1;
-    const grid = 80;
+    const grid = 100;
     const ox = -((cam.x % grid) + grid) % grid;
     const oy = -((cam.y % grid) + grid) % grid;
     for (let x = ox; x < W; x += grid) {
@@ -451,48 +407,36 @@ PJ.Stages["rengasdengklok"] = (function () {
       ctx.stroke();
     }
 
-    // path glow toward goal
-    ctx.strokeStyle = "rgba(234, 200, 115, 0.12)";
-    ctx.lineWidth = 18;
+    // faint route
+    ctx.strokeStyle = "rgba(234, 200, 115, 0.1)";
+    ctx.lineWidth = 16;
     ctx.lineCap = "round";
     ctx.beginPath();
-    ctx.moveTo(120 - cam.x, WORLD.h * 0.52 - cam.y);
+    ctx.moveTo(140 - cam.x, WORLD.h * 0.5 - cam.y);
     ctx.lineTo(goal.x - cam.x, goal.y - cam.y);
     ctx.stroke();
 
-    // bushes (cover)
     bushes.forEach((b) => {
-      const sx = b.x - cam.x;
-      const sy = b.y - cam.y;
+      const sx = b.x - cam.x, sy = b.y - cam.y;
       ctx.beginPath();
       ctx.arc(sx, sy, b.r, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(30, 48, 28, 0.85)";
+      ctx.fillStyle = "rgba(28, 44, 26, 0.88)";
       ctx.fill();
-      ctx.strokeStyle = "rgba(76, 110, 70, 0.5)";
+      ctx.strokeStyle = "rgba(70, 100, 65, 0.45)";
       ctx.lineWidth = 2;
       ctx.stroke();
-      // leaves hint
-      ctx.fillStyle = "rgba(60, 90, 55, 0.4)";
-      for (let i = 0; i < 5; i++) {
-        const a = (i / 5) * Math.PI * 2;
-        ctx.beginPath();
-        ctx.arc(sx + Math.cos(a) * b.r * 0.45, sy + Math.sin(a) * b.r * 0.45, b.r * 0.28, 0, Math.PI * 2);
-        ctx.fill();
-      }
     });
 
-    // goal safe house
+    // goal
     {
-      const gx = goal.x - cam.x;
-      const gy = goal.y - cam.y;
+      const gx = goal.x - cam.x, gy = goal.y - cam.y;
       ctx.beginPath();
-      ctx.arc(gx, gy, goal.r + 8, 0, Math.PI * 2);
-      ctx.strokeStyle = "rgba(234, 200, 115, 0.35)";
+      ctx.arc(gx, gy, goal.r + 10, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(234, 200, 115, 0.4)";
       ctx.lineWidth = 2;
       ctx.setLineDash([6, 6]);
       ctx.stroke();
       ctx.setLineDash([]);
-      // house body
       ctx.fillStyle = "#2a2218";
       ctx.fillRect(gx - 22, gy - 16, 44, 32);
       ctx.fillStyle = RED;
@@ -508,20 +452,16 @@ PJ.Stages["rengasdengklok"] = (function () {
       ctx.fillText("RENGASDENGKLOK", gx, gy + 52);
     }
 
-    // patrol vision then bodies
     patrols.forEach(drawVisionCone);
     patrols.forEach((p) => {
-      const sx = p.x - cam.x;
-      const sy = p.y - cam.y;
+      const sx = p.x - cam.x, sy = p.y - cam.y;
       ctx.save();
       ctx.translate(sx, sy);
       ctx.rotate(p.angle);
-      // body
       ctx.fillStyle = "#3d5a73";
       ctx.beginPath();
       ctx.ellipse(0, 0, 12, 9, 0, 0, Math.PI * 2);
       ctx.fill();
-      // head direction
       ctx.fillStyle = "#5a84a6";
       ctx.beginPath();
       ctx.arc(8, 0, 5, 0, Math.PI * 2);
@@ -529,13 +469,12 @@ PJ.Stages["rengasdengklok"] = (function () {
       ctx.restore();
     });
 
-    // leaders (Soekarno-Hatta)
+    // leaders
     {
-      const lx = leaders.x - cam.x;
-      const ly = leaders.y - cam.y;
+      const lx = leaders.x - cam.x, ly = leaders.y - cam.y;
       ctx.beginPath();
       ctx.arc(lx, ly, leaders.r, 0, Math.PI * 2);
-      ctx.fillStyle = "#f3eee1";
+      ctx.fillStyle = PARCH;
       ctx.fill();
       ctx.strokeStyle = GOLD;
       ctx.lineWidth = 2;
@@ -547,27 +486,25 @@ PJ.Stages["rengasdengklok"] = (function () {
       ctx.fillText("S+H", lx, ly);
     }
 
-    // player (youth)
+    // player
     {
-      const px = player.x - cam.x;
-      const py = player.y - cam.y;
+      const px = player.x - cam.x, py = player.y - cam.y;
       const hidden = inBush(player.x, player.y);
       ctx.beginPath();
       ctx.arc(px, py, player.r, 0, Math.PI * 2);
-      ctx.fillStyle = hidden ? "rgba(200, 16, 46, 0.55)" : RED;
+      ctx.fillStyle = hidden ? "rgba(200, 16, 46, 0.5)" : RED;
       ctx.fill();
       ctx.strokeStyle = GOLD;
       ctx.lineWidth = 2;
       ctx.stroke();
       if (hidden) {
-        ctx.fillStyle = "rgba(234, 200, 115, 0.8)";
+        ctx.fillStyle = "rgba(234, 200, 115, 0.85)";
         ctx.font = "9px Special Elite, monospace";
         ctx.textAlign = "center";
         ctx.fillText("SEMBUNYI", px, py - player.r - 10);
       }
     }
 
-    // particles
     particles.forEach((pt) => {
       ctx.globalAlpha = Math.max(0, pt.life / 50);
       ctx.fillStyle = pt.color;
@@ -577,25 +514,23 @@ PJ.Stages["rengasdengklok"] = (function () {
       ctx.globalAlpha = 1;
     });
 
-    // HUD vignette + alert
     if (spottedFlash > 0) {
       ctx.fillStyle = `rgba(200, 16, 46, ${0.25 * (spottedFlash / 40)})`;
       ctx.fillRect(0, 0, W, H);
     }
 
-    // controls hint
+    const isId = !(PJ.I18N && PJ.I18N.getLang() === "en");
     ctx.fillStyle = "rgba(243, 238, 225, 0.45)";
     ctx.font = "11px Inter, sans-serif";
     ctx.textAlign = "left";
-    const isId = !(PJ.I18N && PJ.I18N.getLang() === "en");
     ctx.fillText(
-      isId ? "WASD / panah / sentuh-seret · Semak = sembunyi" : "WASD / arrows / drag · Bushes = hide",
+      isId ? "WASD / panah / seret · Semak = sembunyi · 9 patroli" : "WASD / arrows / drag · Bushes hide you · 9 patrols",
       16,
       H - 18
     );
 
     if (startSafe > 0) {
-      ctx.fillStyle = "rgba(234, 200, 115, 0.85)";
+      ctx.fillStyle = "rgba(234, 200, 115, 0.9)";
       ctx.font = "13px Special Elite, monospace";
       ctx.textAlign = "center";
       ctx.fillText(isId ? "Berangkat diam-diam…" : "Move out quietly…", W / 2, 28);
@@ -611,6 +546,7 @@ PJ.Stages["rengasdengklok"] = (function () {
 
   function open(opts) {
     ensureDom();
+    bindChrome();
     onCompleteCb = (opts && opts.onComplete) || function () {};
     completed = false;
     if (orbsLayer) orbsLayer.innerHTML = "";
@@ -620,8 +556,8 @@ PJ.Stages["rengasdengklok"] = (function () {
     if (headingEl) headingEl.textContent = "Rengasdengklok · 16 Agustus 1945";
     if (hintEl)
       hintEl.textContent = isId
-        ? "Kawal Soekarno & Hatta ke rumah aman. Hindari sinar patroli. Semak melindungi."
-        : "Escort Soekarno & Hatta to the safe house. Avoid patrol lights. Bushes hide you.";
+        ? "Kawal Soekarno & Hatta. Hindari patroli. Semak melindungi. Peta lebih luas — lebih sulit."
+        : "Escort Soekarno & Hatta. Avoid patrols. Bushes hide you. Larger map — harder.";
 
     overlay.hidden = false;
     overlay.classList.add("is-open");
@@ -649,6 +585,7 @@ PJ.Stages["rengasdengklok"] = (function () {
     if (completePanel) completePanel.hidden = true;
     if (didComplete && typeof onCompleteCb === "function") {
       onCompleteCb();
+      console.log("[PERJUANGAN] rengasdengklok complete → unlock next");
     }
   }
 

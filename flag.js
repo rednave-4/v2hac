@@ -41,8 +41,8 @@ PJ.FlagCloth = function (canvas) {
 
     // Fallback when parent not laid out yet (hidden screen, flex not settled)
     if (pw < 32 || ph < 32) {
-      pw = Math.min(window.innerWidth * 0.78, 640);
-      ph = Math.min(window.innerWidth * 0.42, 340);
+      pw = Math.min(window.innerWidth * 0.88, 720);
+      ph = Math.min(window.innerWidth * 0.52, 440);
       if (pw < 32) pw = 320;
       if (ph < 32) ph = 213;
       // Apply explicit size on parent so absolute canvas has a box
@@ -61,7 +61,7 @@ PJ.FlagCloth = function (canvas) {
     canvas.style.height = ph + "px";
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const maxW = Math.min(pw * 0.78, 560);
+    const maxW = Math.min(pw * 0.92, 680);
     W = Math.max(120, maxW);
     H = W * (2 / 3);
     cols = isMobile() ? 12 : 16;
@@ -90,8 +90,8 @@ PJ.FlagCloth = function (canvas) {
 
     ctx.clearRect(0, 0, viewW, viewH);
 
-    const anchorX = viewW * 0.16;
-    const anchorY = viewH * 0.38;
+    const anchorX = viewW * 0.12;
+    const anchorY = viewH * 0.28;
     const sway = Math.sin(t * 0.55) * 4;
 
     ctx.save();
