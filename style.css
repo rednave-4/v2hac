@@ -192,15 +192,16 @@ button {
 }
 
 .e1-hint {
-  position: absolute;
+  position: fixed; /* viewport bottom — never overlaps title */
   left: 0;
   right: 0;
-  bottom: max(1.25rem, 4.5vh);
+  bottom: 28px;
+  top: auto;
   width: 100%;
   margin: 0;
   padding: 0 1rem;
   text-align: center;
-  z-index: 6;
+  z-index: 20;
   pointer-events: none;
   font-family: var(--font-mono);
   font-size: 0.78rem;
@@ -208,10 +209,17 @@ button {
   color: var(--parch-faint);
   opacity: 0;
   transition: opacity 1s ease;
-  animation: hintPulse 2.6s ease-in-out infinite;
+  animation: none;
 }
 .e1-hint.is-in {
-  opacity: 1;
+  opacity: 0.75;
+  animation: hintPulse 2.6s ease-in-out infinite;
+}
+/* Hide hint when not on entrance 1 */
+#entrance1:not(.is-active) .e1-hint,
+#entrance1[hidden] .e1-hint {
+  display: none !important;
+  opacity: 0 !important;
 }
 @keyframes hintPulse {
   0%, 100% { opacity: 0.55; }
