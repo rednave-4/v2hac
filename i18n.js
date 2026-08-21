@@ -19,7 +19,7 @@ PJ.I18N = (function () {
       // Entrance 2
       e2_eyebrow: "Road to Merdeka",
       e2_heading: "Dibuat untuk Hackathon",
-      e2_maker: "— Nama Pembuat —",
+      e2_maker: "— MEATLOVER TEAM —",
       e2_cta: "Lanjutkan",
 
       // Mode select
@@ -86,7 +86,7 @@ PJ.I18N = (function () {
 
       e2_eyebrow: "Road to Merdeka",
       e2_heading: "Made for the Hackathon",
-      e2_maker: "— Creator Name —",
+      e2_maker: "— MEATLOVER TEAM —",
       e2_cta: "Continue",
 
       mode_title: "Choose a Mode",
