@@ -61,7 +61,7 @@ PJ.FlagCloth = function (canvas) {
     canvas.style.height = ph + "px";
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const maxW = Math.min(pw * 0.92, 680);
+    const maxW = Math.min(pw * 0.95, 700);
     W = Math.max(120, maxW);
     H = W * (2 / 3);
     cols = isMobile() ? 12 : 16;
@@ -90,8 +90,8 @@ PJ.FlagCloth = function (canvas) {
 
     ctx.clearRect(0, 0, viewW, viewH);
 
-    const anchorX = viewW * 0.12;
-    const anchorY = viewH * 0.28;
+    const anchorX = viewW * 0.10;
+    const anchorY = viewH * 0.22;
     const sway = Math.sin(t * 0.55) * 4;
 
     ctx.save();

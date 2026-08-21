@@ -163,7 +163,10 @@ PJ.Stages["rengasdengklok"] = (function () {
     startSafe = 70;
     particles = [];
     completed = false;
-    if (completePanel) completePanel.hidden = true;
+    if (completePanel) {
+      completePanel.hidden = true;
+      completePanel.classList.remove("is-in");
+    }
 
     bushes = [
       { x: 280, y: 320, r: 42 },
@@ -315,7 +318,7 @@ PJ.Stages["rengasdengklok"] = (function () {
       }
     }
 
-    if (Math.hypot(player.x - goal.x, player.y - goal.y) < goal.r + player.r) {
+    if (Math.hypot(player.x - goal.x, player.y - goal.y) < goal.r + player.r + 28) {
       win();
     }
 
@@ -337,7 +340,7 @@ PJ.Stages["rengasdengklok"] = (function () {
   function win() {
     if (completed) return;
     completed = true;
-    bindChrome(); // ensure Lanjutkan button calls our close(true)
+    bindChrome();
     if (completePanel) {
       const isEn = PJ.I18N && PJ.I18N.getLang() === "en";
       if (headingEl) headingEl.textContent = "Rengasdengklok";
@@ -354,7 +357,15 @@ PJ.Stages["rengasdengklok"] = (function () {
           ? "Under pressure from the youth, the proclamation could no longer be delayed."
           : "Di bawah desakan golongan muda, proklamasi tak lagi bisa ditunda.";
       completePanel.hidden = false;
+      // CRITICAL: panel CSS defaults to opacity 0 until .is-in
+      completePanel.classList.add("is-in");
     }
+    // Backup: mark progress even if user never clicks Lanjutkan
+    try {
+      if (typeof window.markMissionComplete === "function") {
+        window.markMissionComplete("rengasdengklok");
+      }
+    } catch (e) {}
     for (let i = 0; i < 36; i++) {
       particles.push({
         x: goal.x,
@@ -420,11 +431,18 @@ PJ.Stages["rengasdengklok"] = (function () {
       const sx = b.x - cam.x, sy = b.y - cam.y;
       ctx.beginPath();
       ctx.arc(sx, sy, b.r, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(28, 44, 26, 0.88)";
+      ctx.fillStyle = "rgba(22, 38, 20, 0.9)";
       ctx.fill();
-      ctx.strokeStyle = "rgba(70, 100, 65, 0.45)";
+      ctx.strokeStyle = "rgba(90, 140, 80, 0.55)";
       ctx.lineWidth = 2;
       ctx.stroke();
+      ctx.fillStyle = "rgba(50, 90, 45, 0.55)";
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2 + 0.3;
+        ctx.beginPath();
+        ctx.arc(sx + Math.cos(a) * b.r * 0.4, sy + Math.sin(a) * b.r * 0.4, b.r * 0.32, 0, Math.PI * 2);
+        ctx.fill();
+      }
     });
 
     // goal
@@ -524,7 +542,7 @@ PJ.Stages["rengasdengklok"] = (function () {
     ctx.font = "11px Inter, sans-serif";
     ctx.textAlign = "left";
     ctx.fillText(
-      isId ? "WASD / panah / seret · Semak = sembunyi · 9 patroli" : "WASD / arrows / drag · Bushes hide you · 9 patrols",
+      isId ? "WASD / panah / seret · 9 PATROLI · peta 2× lebih luas" : "WASD / arrows / drag · 9 PATROLS · 2× map",
       16,
       H - 18
     );
@@ -582,7 +600,10 @@ PJ.Stages["rengasdengklok"] = (function () {
       overlay.classList.remove("is-open");
       overlay.hidden = true;
     }
-    if (completePanel) completePanel.hidden = true;
+    if (completePanel) {
+      completePanel.hidden = true;
+      completePanel.classList.remove("is-in");
+    }
     if (didComplete && typeof onCompleteCb === "function") {
       onCompleteCb();
       console.log("[PERJUANGAN] rengasdengklok complete → unlock next");
